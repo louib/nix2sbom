@@ -50,3 +50,8 @@ impl Derivation {
 struct Output {
     path: String,
 }
+
+pub fn get_dependencies(path: &str) -> Vec<String> {
+    // TODO nix-store -qR /an/executable/path
+    vec![]
+}
