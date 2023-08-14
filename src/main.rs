@@ -22,7 +22,11 @@ mod sbom;
 #[clap(about = "nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation", long_about = None)]
 struct NixToSBOM {}
 
-fn main() {
+fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     logger::init();
-    println!("Hello, world!");
+    log::info!("Getting the meta info for packages in the Nix store");
+    let packages = crate::nix::get_packages()?;
+    log::debug!("Found {} packages in the Nix store", packages.len());
+
+    Ok(std::process::ExitCode::SUCCESS)
 }

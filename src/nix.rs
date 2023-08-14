@@ -71,7 +71,7 @@ pub fn get_packages() -> Result<HashMap<String, PackageMeta>, String> {
         .arg("-a")
         .arg("--meta")
         .arg("--json")
-        .arg("'.*'")
+        .arg(".*")
         .output()
         .map_err(|e| e.to_string())?;
 
