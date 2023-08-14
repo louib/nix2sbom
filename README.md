@@ -17,3 +17,9 @@ nix profile install github:louib/nix2sbom
 ```
 cargo install --path .
 ```
+
+## Using
+
+### Logging
+The `NIX2SBOM_LOG_LEVEL` environment variable can be used to tune the logging level.
+The accepted values are `DEBUG`, `INFO`, `WARN` and `ERROR`. The default log level is `INFO`.

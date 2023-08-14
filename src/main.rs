@@ -11,6 +11,7 @@ extern crate serde_derive;
 
 use clap::Parser;
 
+mod logger;
 mod nix;
 mod sbom;
 
@@ -22,5 +23,6 @@ mod sbom;
 struct NixToSBOM {}
 
 fn main() {
+    logger::init();
     println!("Hello, world!");
 }
