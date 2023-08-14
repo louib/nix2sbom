@@ -7,7 +7,7 @@
 #[macro_use]
 extern crate clap;
 
-use clap::{AppSettings, Parser, Subcommand};
+use clap::Parser;
 
 /// nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation
 #[derive(Parser)]
