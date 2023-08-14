@@ -9,6 +9,9 @@ extern crate clap;
 
 use clap::Parser;
 
+mod nix;
+mod sbom;
+
 /// nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation
 #[derive(Parser)]
 #[clap(name = "nix2sbom")]
