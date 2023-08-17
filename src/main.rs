@@ -24,16 +24,33 @@ struct NixToSBOM {
     #[clap(long, short)]
     file_path: Option<String>,
 
+    /// Output format for the SBOM manifest. Defaults to CycloneDX
+    #[clap(long)]
+    format: Option<String>,
+
     /// Generate a SBOM for the current system.
     #[clap(long, short)]
     current_system: bool,
 }
 
 fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
+    logger::init();
     let args = NixToSBOM::parse();
 
-    logger::init();
-    log::info!("Getting the meta info for packages in the Nix store");
+    let mut derivations: crate::nix::Derivations = crate::nix::Derivations::default();
+    if let Some(file_path) = args.file_path {
+        log::info!("Getting the derivations from file {}.", &file_path);
+        derivations = nix::Derivation::get_derivations(&file_path)?;
+    } else if args.current_system {
+        log::info!("Getting the derivations from the current system.");
+        derivations = nix::Derivation::get_derivations_for_current_system()?;
+    } else {
+        eprintln!("Error: Must provide a file or use the --curent-system argument.");
+        return Ok(std::process::ExitCode::FAILURE);
+    }
+    log::info!("Found {} derivations", derivations.len());
+
+    log::info!("Getting the metadata for packages in the Nix store");
     let packages = crate::nix::get_packages()?;
     log::debug!("Found {} packages in the Nix store", packages.len());
 

@@ -12,7 +12,7 @@ const CURRENT_SYSTEM_PATH: &str = "/run/current-system";
 #[derive(Serialize)]
 #[derive(Deserialize)]
 #[derive(Clone)]
-struct Derivation {
+pub struct Derivation {
     outputs: HashMap<String, Output>,
 
     #[serde(rename = "inputSrcs")]
@@ -33,19 +33,21 @@ struct Derivation {
     extra: HashMap<String, serde_json::Value>,
 }
 
+pub type Derivations = HashMap<String, Derivation>;
+
 impl Derivation {
-    pub fn get_derivations_for_current_system() -> Result<Vec<Derivation>, Error> {
+    pub fn get_derivations_for_current_system() -> Result<Derivations, Error> {
         Derivation::get_derivations(CURRENT_SYSTEM_PATH)
     }
 
-    pub fn get_derivations(file_path: &str) -> Result<Vec<Derivation>, Error> {
+    pub fn get_derivations(file_path: &str) -> Result<Derivations, Error> {
         let output = Command::new("nix")
             .arg("show-derivation")
             .arg("-r")
             .arg(file_path)
             .output()?;
 
-        let flat_derivations: Vec<Derivation> = serde_json::from_slice(&output.stdout)?;
+        let flat_derivations: Derivations = serde_json::from_slice(&output.stdout)?;
 
         Ok(flat_derivations)
     }
