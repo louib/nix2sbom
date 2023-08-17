@@ -4,6 +4,10 @@ use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
+// This is a special file used By NixOS to represent the derivations
+// that were used to build the current system.
+const CURRENT_SYSTEM_PATH: &str = "/run/current-system";
+
 #[derive(Debug)]
 #[derive(Serialize)]
 #[derive(Deserialize)]
@@ -30,14 +34,20 @@ struct Derivation {
 }
 
 impl Derivation {
-    pub fn parse_from_file(file: &str) -> Result<Vec<u8>, Error> {
+    pub fn get_derivations_for_current_system() -> Result<Vec<Derivation>, Error> {
+        Derivation::get_derivations(CURRENT_SYSTEM_PATH)
+    }
+
+    pub fn get_derivations(file_path: &str) -> Result<Vec<Derivation>, Error> {
         let output = Command::new("nix")
             .arg("show-derivation")
             .arg("-r")
-            .arg(file)
+            .arg(file_path)
             .output()?;
 
-        Ok(output.stdout)
+        let flat_derivations: Vec<Derivation> = serde_json::from_slice(&output.stdout)?;
+
+        Ok(flat_derivations)
     }
 }
 
