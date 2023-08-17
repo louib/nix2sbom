@@ -19,9 +19,19 @@ mod sbom;
 #[clap(name = "nix2sbom")]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 #[clap(about = "nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation", long_about = None)]
-struct NixToSBOM {}
+struct NixToSBOM {
+    /// Path of the file to extract a SBOM manifest from.
+    #[clap(long, short)]
+    file_path: Option<String>,
+
+    /// Generate a SBOM for the current system.
+    #[clap(long, short)]
+    current_system: bool,
+}
 
 fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
+    let args = NixToSBOM::parse();
+
     logger::init();
     log::info!("Getting the meta info for packages in the Nix store");
     let packages = crate::nix::get_packages()?;
