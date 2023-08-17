@@ -1,10 +1,8 @@
-extern crate serde;
-extern crate serde_json;
-
 use std::collections::HashMap;
-
 use std::io::Error;
 use std::process::Command;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 #[derive(Serialize)]
