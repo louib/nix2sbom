@@ -13,6 +13,13 @@ impl Format {
         }
         None
     }
+
+    pub fn to_pretty_name(&self) -> String {
+        match self {
+            crate::sbom::Format::CycloneDX => "CycloneDX".to_string(),
+            crate::sbom::Format::SPDX => "SPDX".to_string(),
+        }
+    }
 }
 
 impl Default for Format {

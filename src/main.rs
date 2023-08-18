@@ -65,5 +65,18 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         None => crate::sbom::Format::default(),
     };
 
+    match output_format {
+        crate::sbom::Format::CycloneDX => {
+            let output = crate::cyclone_dx::dump();
+        }
+        crate::sbom::Format::SPDX => {
+            eprintln!(
+                "{} is not supported yet.",
+                crate::sbom::Format::SPDX.to_pretty_name()
+            );
+            return Ok(std::process::ExitCode::FAILURE);
+        }
+    };
+
     Ok(std::process::ExitCode::SUCCESS)
 }
