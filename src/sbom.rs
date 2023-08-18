@@ -1,17 +1,23 @@
-enum Format {
+pub enum Format {
     SPDX,
     CycloneDX,
 }
 
 impl Format {
-    pub fn from_file_extension(file_path: &str) -> Option<Format> {
-        if file_path.ends_with(".spdx") {
+    pub fn from_string(format: &str) -> Option<Format> {
+        if format.ends_with("spdx") {
             return Some(Format::SPDX);
         }
-        if file_path.ends_with(".cdx") {
+        if format.ends_with("cdx") {
             return Some(Format::CycloneDX);
         }
         None
+    }
+}
+
+impl Default for Format {
+    fn default() -> Format {
+        Format::CycloneDX
     }
 }
 

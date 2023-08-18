@@ -54,5 +54,16 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     let packages = crate::nix::get_packages()?;
     log::debug!("Found {} packages in the Nix store", packages.len());
 
+    let output_format = match args.format {
+        Some(f) => match crate::sbom::Format::from_string(&f) {
+            Some(f) => f,
+            None => {
+                eprintln!("Invalid format {}", &f);
+                return Ok(std::process::ExitCode::FAILURE);
+            }
+        },
+        None => crate::sbom::Format::default(),
+    };
+
     Ok(std::process::ExitCode::SUCCESS)
 }
