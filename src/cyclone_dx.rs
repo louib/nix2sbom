@@ -22,7 +22,9 @@ pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packag
 
     let mut components: Vec<Component> = vec![];
     for (derivation_path, derivation) in derivations.iter() {
-        components.push(dump_derivation(derivation_path, derivation, packages));
+        if let Some(component) = dump_derivation(derivation_path, derivation, packages) {
+            components.push(component);
+        }
     }
 
     let cyclonedx = CycloneDxBuilder::default()
@@ -41,13 +43,27 @@ pub fn dump_derivation(
     derivation_path: &str,
     derivation: &crate::nix::Derivation,
     packages: &crate::nix::Packages,
-) -> Component {
-    // TODO handle if the package metadata was not found.
-    let package = packages.get(derivation_path).unwrap();
-    ComponentBuilder::default()
+) -> Option<Component> {
+    log::debug!("Dumping derivation for {}", &derivation_path);
+    // TODO handle if the name was not found
+    let derivation_name = match derivation.get_name() {
+        Some(n) => n,
+        None => return None,
+    };
+
+    let package = match packages.get(derivation_name) {
+        Some(p) => p,
+        None => {
+            log::warn!("Could not find package metadata for {}", &derivation_name);
+            return None;
+        }
+    };
+
+    let mut component_builder = ComponentBuilder::default();
+
+    component_builder
         .bom_ref(derivation_path.to_string())
         .name(package.name.to_string())
-        .description("TODO".to_string())
         .cpe("TODO".to_string())
         // TODO application is the generic type, but we should also use file and library
         // also, populate the mime_type in case of a file type.
@@ -56,7 +72,11 @@ pub fn dump_derivation(
         .scope("required".to_string())
         .purl("TODO".to_string())
         .publisher("TODO".to_string())
-        .version("TODO".to_string())
-        .build()
-        .unwrap()
+        .version("TODO".to_string());
+
+    if let Some(description) = &package.meta.description {
+        component_builder.description(description.to_string());
+    }
+
+    Some(component_builder.build().unwrap())
 }

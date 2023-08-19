@@ -68,6 +68,10 @@ impl Derivation {
 
         Ok(flat_derivations)
     }
+
+    pub fn get_name(&self) -> Option<&String> {
+        self.env.get("name")
+    }
 }
 
 #[derive(Debug)]
@@ -102,7 +106,15 @@ pub fn get_packages() -> Result<Packages, String> {
         .output()
         .map_err(|e| e.to_string())?;
 
-    let packages: Packages = serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
+    let raw_packages: Packages =
+        serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
+
+    let mut packages: Packages = Packages::default();
+    // Re-index the packages using the internal package name.
+    for package in raw_packages.values() {
+        packages.insert(package.name.to_string(), package.clone());
+    }
+
     Ok(packages)
 }
 
@@ -114,6 +126,7 @@ pub struct Meta {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 #[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct Package {
@@ -137,6 +150,7 @@ pub struct Package {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 #[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct PackageMeta {
@@ -156,6 +170,7 @@ pub struct PackageMeta {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 #[derive(Serialize)]
 #[derive(Deserialize)]
 #[serde(untagged)]
