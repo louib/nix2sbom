@@ -51,6 +51,22 @@ impl Derivation {
 
         Ok(flat_derivations)
     }
+
+    pub fn build_and_get_derivations(
+        file_path: &str,
+        derivation_ref: &str,
+    ) -> Result<Derivations, Error> {
+        let derivation_path = format!("{}#{}", file_path, derivation_ref);
+        let output = Command::new("nix")
+            .arg("build")
+            .arg("--show-out-paths")
+            .arg(derivation_path)
+            .output()?;
+
+        let flat_derivations: Derivations = serde_json::from_slice(&output.stdout)?;
+
+        Ok(flat_derivations)
+    }
 }
 
 #[derive(Debug)]
