@@ -167,6 +167,8 @@ pub struct PackageMeta {
     pub unsupported: Option<bool>,
 
     pub homepage: Option<Homepage>,
+
+    pub maintainers: Vec<PackageMaintainer>,
 }
 
 pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) -> Option<Package> {
@@ -184,4 +186,20 @@ pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) ->
 pub enum Homepage {
     One(String),
     Many(Vec<String>),
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+pub struct PackageMaintainer {
+    pub email: String,
+    pub name: String,
+
+    #[serde(rename = "github")]
+    pub github_username: Option<String>,
+
+    #[serde(rename = "githubId")]
+    pub github_id: Option<String>,
+    // TODO also support GPG keys
 }
