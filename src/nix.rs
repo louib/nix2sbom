@@ -168,7 +168,9 @@ pub struct PackageMeta {
 
     pub homepage: Option<Homepage>,
 
-    pub maintainers: Vec<PackageMaintainer>,
+    pub maintainers: Option<Vec<PackageMaintainer>>,
+
+    pub license: Option<License>,
 }
 
 pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) -> Option<Package> {
@@ -200,6 +202,48 @@ pub struct PackageMaintainer {
     pub github_username: Option<String>,
 
     #[serde(rename = "githubId")]
-    pub github_id: Option<String>,
+    pub github_id: Option<u64>,
     // TODO also support GPG keys
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum License {
+    One(PackageLicense),
+    Many(Vec<PackageLicense>),
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum PackageLicense {
+    // This is used for unknown licenses, or to list only the SPDX ID.
+    Name(String),
+    Details(LicenseDetails),
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+pub struct LicenseDetails {
+    pub free: Option<bool>,
+    pub redistributable: Option<bool>,
+    pub deprecated: Option<bool>,
+
+    #[serde(rename = "shortName")]
+    pub short_name: Option<String>,
+
+    #[serde(rename = "fullName")]
+    pub full_name: Option<String>,
+
+    // Some licenses might not have an SPDX ID, for example if they are not
+    // free (the `Unfree` license).
+    #[serde(rename = "spdxId")]
+    pub spdx_id: Option<String>,
 }
