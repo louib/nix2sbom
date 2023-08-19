@@ -173,12 +173,6 @@ pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) ->
     if let Some(package) = packages.get(derivation_name) {
         return Some(package.clone());
     }
-
-    for package in packages.values() {
-        if package.name.contains(derivation_name) {
-            return Some(package.clone());
-        }
-    }
     None
 }
 
