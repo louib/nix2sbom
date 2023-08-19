@@ -75,7 +75,7 @@ pub fn dump_derivation(
         .scope("required".to_string())
         .purl("TODO".to_string())
         .publisher("TODO".to_string())
-        .version("TODO".to_string());
+        .version(package.version.to_string());
 
     if let Some(description) = &package.meta.description {
         component_builder.description(description.to_string());
