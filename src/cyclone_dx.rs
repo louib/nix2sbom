@@ -7,7 +7,7 @@ use serde_cyclonedx::cyclonedx::v_1_4::{
     Component, ComponentBuilder, CycloneDxBuilder, Metadata, ToolBuilder,
 };
 
-pub fn dump(derivations: &crate::nix::Derivations) -> String {
+pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packages) -> String {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();
     let now: DateTime<Utc> = now.into();
@@ -22,7 +22,7 @@ pub fn dump(derivations: &crate::nix::Derivations) -> String {
 
     let mut components: Vec<Component> = vec![];
     for (derivation_path, derivation) in derivations.iter() {
-        components.push(dump_derivation(derivation_path, derivation));
+        components.push(dump_derivation(derivation_path, derivation, packages));
     }
 
     let cyclonedx = CycloneDxBuilder::default()
@@ -37,10 +37,16 @@ pub fn dump(derivations: &crate::nix::Derivations) -> String {
     "".to_string()
 }
 
-pub fn dump_derivation(derivation_path: &str, derivation: &crate::nix::Derivation) -> Component {
+pub fn dump_derivation(
+    derivation_path: &str,
+    derivation: &crate::nix::Derivation,
+    packages: &crate::nix::Packages,
+) -> Component {
+    // TODO handle if the package metadata was not found.
+    let package = packages.get(derivation_path).unwrap();
     ComponentBuilder::default()
         .bom_ref(derivation_path.to_string())
-        .name("TODO".to_string())
+        .name(package.name.to_string())
         .description("TODO".to_string())
         .cpe("TODO".to_string())
         // TODO application is the generic type, but we should also use file and library

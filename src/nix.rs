@@ -34,6 +34,7 @@ pub struct Derivation {
 }
 
 pub type Derivations = HashMap<String, Derivation>;
+pub type Packages = HashMap<String, Package>;
 
 impl Derivation {
     pub fn get_derivations_for_current_system() -> Result<Derivations, Error> {
@@ -87,7 +88,7 @@ pub fn get_derivation_path(store_path: &str) -> String {
     // TODO nix-store -qd store_path
     "".to_string()
 }
-pub fn get_packages() -> Result<HashMap<String, PackageMeta>, String> {
+pub fn get_packages() -> Result<Packages, String> {
     // There is currently no way with Nix to generate the meta information
     // only for a single derivation. We need to generate the meta for
     // all the derivations in the store and then extract the information
@@ -101,8 +102,7 @@ pub fn get_packages() -> Result<HashMap<String, PackageMeta>, String> {
         .output()
         .map_err(|e| e.to_string())?;
 
-    let packages: HashMap<String, PackageMeta> =
-        serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
+    let packages: Packages = serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
     Ok(packages)
 }
 
@@ -118,37 +118,39 @@ pub struct Meta {
 #[derive(Deserialize)]
 pub struct Package {
     // name of the derivation
-    name: String,
+    pub name: String,
 
     // package name
-    pname: String,
+    pub pname: String,
 
     // package version
-    version: String,
+    pub version: String,
 
     // name of the system for which this package was built
-    system: String,
+    pub system: String,
 
     // name of the output
     #[serde(rename = "outputName")]
-    output_name: String,
+    pub output_name: String,
+
+    pub meta: PackageMeta,
 }
 
 #[derive(Debug)]
 #[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct PackageMeta {
-    available: Option<bool>,
+    pub available: Option<bool>,
 
-    broken: Option<bool>,
+    pub broken: Option<bool>,
 
-    insecure: Option<bool>,
+    pub insecure: Option<bool>,
 
-    description: Option<String>,
+    pub description: Option<String>,
 
-    unfree: Option<bool>,
+    pub unfree: Option<bool>,
 
-    unsupported: Option<bool>,
+    pub unsupported: Option<bool>,
 
-    homepage: Option<String>,
+    pub homepage: Option<String>,
 }
