@@ -152,5 +152,14 @@ pub struct PackageMeta {
 
     pub unsupported: Option<bool>,
 
-    pub homepage: Option<String>,
+    pub homepage: Option<Homepage>,
+}
+
+#[derive(Debug)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum Homepage {
+    One(String),
+    Many(Vec<String>),
 }
