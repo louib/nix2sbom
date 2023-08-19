@@ -67,7 +67,7 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     match output_format {
         crate::sbom::Format::CycloneDX => {
-            let output = crate::cyclone_dx::dump();
+            let output = crate::cyclone_dx::dump(&derivations);
         }
         crate::sbom::Format::SPDX => {
             eprintln!(
