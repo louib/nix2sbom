@@ -9,6 +9,7 @@ extern crate clap;
 
 use clap::Parser;
 
+mod consts;
 mod cyclone_dx;
 mod logger;
 mod nix;
@@ -16,7 +17,7 @@ mod sbom;
 
 /// nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation
 #[derive(Parser)]
-#[clap(name = "nix2sbom")]
+#[clap(name = crate::consts::PROJECT_NAME)]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 #[clap(about = "nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation", long_about = None)]
 struct NixToSBOM {

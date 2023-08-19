@@ -15,7 +15,7 @@ pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packag
 
     metadata.tools = Some(vec![ToolBuilder::default()
         .vendor("louib".to_string())
-        .name("nix2sbom".to_string())
+        .name(crate::consts::PROJECT_NAME.to_string())
         .version(env!("CARGO_PKG_VERSION"))
         .build()
         .unwrap()]);
