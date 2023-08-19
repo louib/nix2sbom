@@ -51,10 +51,11 @@ pub fn dump_derivation(
         None => return None,
     };
 
-    let package = match packages.get(derivation_name) {
+    log::info!("Getting package meta for derivation {}", derivation_name);
+    let package = match crate::nix::get_package_for_derivation(derivation_name, packages) {
         Some(p) => p,
         None => {
-            log::warn!("Could not find package metadata for {}", &derivation_name);
+            log::warn!("Could not find package meta for {}", derivation_name);
             return None;
         }
     };
