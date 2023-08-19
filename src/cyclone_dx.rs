@@ -7,6 +7,8 @@ use serde_cyclonedx::cyclonedx::v_1_4::{
     Component, ComponentBuilder, CycloneDxBuilder, Metadata, ToolBuilder,
 };
 
+const CURRENT_SPEC_VERSION: &str = "1.4";
+
 pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packages) -> String {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();
@@ -28,15 +30,15 @@ pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packag
     }
 
     let cyclonedx = CycloneDxBuilder::default()
-        .bom_format("CycloneDX")
-        .spec_version("1.4")
+        .bom_format(crate::sbom::CYCLONE_DX_NAME)
+        .spec_version(CURRENT_SPEC_VERSION)
         .version(1)
         .metadata(metadata)
         .components(components)
         .build()
         .unwrap();
 
-    "".to_string()
+    serde_json::to_string_pretty(&cyclonedx).unwrap()
 }
 
 pub fn dump_derivation(
