@@ -73,7 +73,7 @@ pub fn dump_derivation(
         .type_("application".to_string())
         // I'm assuming here that if a package has been installed by Nix, it was required.
         .scope("required".to_string())
-        .purl("TODO".to_string())
+        .purl(package.get_purl())
         .publisher("TODO".to_string())
         .version(package.version.to_string());
 

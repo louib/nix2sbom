@@ -148,6 +148,11 @@ pub struct Package {
 
     pub meta: PackageMeta,
 }
+impl Package {
+    pub fn get_purl(&self) -> String {
+        format!("pkg:nix/{}@{}", self.name, self.version)
+    }
+}
 
 #[derive(Debug)]
 #[derive(Clone)]
