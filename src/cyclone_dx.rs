@@ -21,8 +21,8 @@ pub fn dump(derivations: &crate::nix::Derivations) -> String {
         .unwrap()]);
 
     let mut components: Vec<Component> = vec![];
-    for derivation in derivations.values() {
-        components.push(dump_derivation(derivation));
+    for (derivation_path, derivation) in derivations.iter() {
+        components.push(dump_derivation(derivation_path, derivation));
     }
 
     let cyclonedx = CycloneDxBuilder::default()
@@ -37,11 +37,19 @@ pub fn dump(derivations: &crate::nix::Derivations) -> String {
     "".to_string()
 }
 
-pub fn dump_derivation(derivation: &crate::nix::Derivation) -> Component {
+pub fn dump_derivation(derivation_path: &str, derivation: &crate::nix::Derivation) -> Component {
     ComponentBuilder::default()
+        .bom_ref(derivation_path.to_string())
         .name("TODO".to_string())
+        .description("TODO".to_string())
+        .cpe("TODO".to_string())
         // TODO application is the generic type, but we should also use file and library
+        // also, populate the mime_type in case of a file type.
         .type_("application".to_string())
+        // I'm assuming here that if a package has been installed by Nix, it was required.
+        .scope("required".to_string())
+        .purl("TODO".to_string())
+        .publisher("TODO".to_string())
         .version("TODO".to_string())
         .build()
         .unwrap()
