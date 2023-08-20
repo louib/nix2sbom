@@ -67,9 +67,14 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         None => crate::sbom::Format::default(),
     };
 
+    log::info!("Building the package graph");
+    let package_graph = crate::nix::get_package_graph(&derivations, &packages);
+    log::info!("{} nodes in the package graph", package_graph.len());
+
+    log::info!("Creating the SBOM");
     match output_format {
         crate::sbom::Format::CycloneDX => {
-            let output = crate::cyclone_dx::dump(&derivations, &packages);
+            let output = crate::cyclone_dx::dump(&package_graph, &derivations, &packages);
             println!("{}", &output);
         }
         crate::sbom::Format::SPDX => {

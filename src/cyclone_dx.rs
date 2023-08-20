@@ -10,7 +10,11 @@ use serde_cyclonedx::cyclonedx::v_1_4::{
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
 
-pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packages) -> String {
+pub fn dump(
+    package_graph: &crate::nix::PackageGraph,
+    derivations: &crate::nix::Derivations,
+    packages: &crate::nix::Packages,
+) -> String {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();
     let now: DateTime<Utc> = now.into();
@@ -24,14 +28,8 @@ pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packag
         .unwrap()]);
 
     let mut components: Vec<Component> = vec![];
-    for (derivation_path, derivation) in derivations.iter() {
-        match derivation.builder {
-            crate::nix::DerivationBuilder::FetchURL => {
-                log::debug!("Found derivation with a URL {}", &derivation_path);
-            }
-            _ => continue,
-        };
-        if let Some(component) = dump_derivation(derivation_path, derivation, packages) {
+    for (derivation_path, package) in package_graph.iter() {
+        if let Some(component) = dump_derivation(derivation_path, package) {
             components.push(component);
         }
     }
@@ -50,43 +48,27 @@ pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packag
 
 pub fn dump_derivation(
     derivation_path: &str,
-    derivation: &crate::nix::Derivation,
-    packages: &crate::nix::Packages,
+    package_node: &crate::nix::PackageNode,
 ) -> Option<Component> {
     log::debug!("Dumping derivation for {}", &derivation_path);
-    // TODO handle if the name was not found
-    let derivation_name = match derivation.get_name() {
-        Some(n) => n,
-        None => return None,
-    };
-
-    log::info!("Getting package meta for derivation {}", derivation_name);
-    let package = match crate::nix::get_package_for_derivation(derivation_name, packages) {
-        Some(p) => p,
-        None => {
-            log::warn!("Could not find package meta for {}", derivation_name);
-            return None;
-        }
-    };
-
     let mut component_builder = ComponentBuilder::default();
 
     component_builder.bom_ref(derivation_path.to_string());
-    component_builder.name(package.name.to_string());
+    component_builder.name(package_node.package.name.to_string());
     // component_builder.cpe("TODO".to_string())
     // TODO application is the generic type, but we should also use file and library
     // also, populate the mime_type in case of a file type.
     component_builder.type_("application".to_string());
     // I'm assuming here that if a package has been installed by Nix, it was required.
     component_builder.scope("required".to_string());
-    component_builder.purl(package.get_purl());
-    component_builder.version(package.version.to_string());
+    component_builder.purl(package_node.package.get_purl());
+    component_builder.version(package_node.package.version.to_string());
 
-    if let Some(description) = &package.meta.description {
+    if let Some(description) = &package_node.package.meta.description {
         component_builder.description(description.to_string());
     }
 
-    if let Some(maintainers) = &package.meta.maintainers {
+    if let Some(maintainers) = &package_node.package.meta.maintainers {
         let author = maintainers
             .iter()
             .map(|m| format!("{} ({})", m.name, m.email))
@@ -98,7 +80,7 @@ pub fn dump_derivation(
     }
 
     let mut external_references: Vec<ExternalReference> = vec![];
-    for homepage in package.meta.get_homepages() {
+    for homepage in package_node.package.meta.get_homepages() {
         // See https://docs.rs/serde-cyclonedx/latest/serde_cyclonedx/cyclonedx/v_1_5/struct.ExternalReference.html#structfield.type_
         // for all the available external reference types
         external_references.push(

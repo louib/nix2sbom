@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::io::Error;
 use std::process::Command;
 
@@ -124,9 +124,19 @@ impl Derivation {
     }
 
     // Returns the store path of the stdenv used.
-    pub fn get_url(&self) -> Option<&String> {
-        // There's also a `urls` field that we could use here.
-        self.env.get("url")
+    pub fn get_url(&self) -> Option<String> {
+        if let Some(url) = self.env.get("url") {
+            return Some(url.to_owned());
+        }
+        if let Some(urls) = self.env.get("urls") {
+            // FIXME I'm not sure that this is the right separator!!
+            // FIXME How whould we handle multiple URLs???
+            match urls.split(",").nth(0) {
+                Some(u) => return Some(u.to_string()),
+                None => return None,
+            }
+        }
+        None
     }
 }
 
@@ -312,4 +322,93 @@ pub struct LicenseDetails {
     // free (the `Unfree` license).
     #[serde(rename = "spdxId")]
     pub spdx_id: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct PackageNode {
+    pub main_derivation: Derivation,
+    pub package: Package,
+    pub sources: Vec<Derivation>,
+    pub children: HashSet<String>,
+}
+
+pub type PackageGraph = HashMap<String, PackageNode>;
+
+pub fn get_package_graph(
+    derivations: &crate::nix::Derivations,
+    packages: &crate::nix::Packages,
+) -> PackageGraph {
+    let mut response = PackageGraph::default();
+
+    for (derivation_path, derivation) in derivations.iter() {
+        let derivation_name = match derivation.get_name() {
+            Some(n) => n,
+            None => {
+                log::warn!("Found derivation without a name at {}", derivation_path);
+                continue;
+            }
+        };
+        let package = match packages.get(derivation_name) {
+            Some(p) => p,
+            None => continue,
+        };
+        println!("{} is a main package", derivation_path);
+        let mut current_node = PackageNode {
+            package: package.clone(),
+            main_derivation: derivation.clone(),
+            children: HashSet::default(),
+            sources: vec![],
+        };
+
+        let mut child_derivation_paths: BTreeSet<String> = BTreeSet::default();
+        for input_derivation_path in derivation.input_derivations.keys() {
+            child_derivation_paths.insert(input_derivation_path.clone());
+        }
+
+        let mut visited_derivations: HashSet<String> = HashSet::default();
+
+        while child_derivation_paths.len() != 0 {
+            let child_derivation_path = child_derivation_paths.pop_last().unwrap();
+            if visited_derivations.contains(&child_derivation_path) {
+                continue;
+            }
+            visited_derivations.insert(child_derivation_path.clone());
+
+            let child_derivation = derivations.get(&child_derivation_path).unwrap();
+            let child_derivation_name = match child_derivation.get_name() {
+                Some(n) => n,
+                None => {
+                    log::trace!("Derivation without a name {:?}", &child_derivation);
+                    // FIXME this is ugly. We should just add the input derivations in the graph
+                    // traversal list and move on instead of using a placeholder value.
+                    "NOT_AN_ACTUAL_NAME"
+                }
+            };
+            if child_derivation_name != "source" && packages.get(child_derivation_name).is_some() {
+                log::info!("Found a child derivation that is a main package!!!!!!");
+                current_node
+                    .children
+                    .insert(child_derivation_path.to_string());
+                // FIXME should we really continue here? Are there derivations that define both a
+                // package meta and urls to fetch?
+                continue;
+            } else if child_derivation.env.get("src").is_some() {
+                // The `src` attribute is defined by the mkDerivation function, so in theory we
+                // should always find the package in the meta dictionary if the src attribute
+                // is defined.
+                // FIXME We should still consider those as Packages even if we don't have the meta
+                // information on them
+                continue;
+            }
+            if child_derivation.get_url().is_some() {
+                current_node.sources.push(child_derivation.clone());
+            }
+
+            for input_derivation_path in child_derivation.input_derivations.keys() {
+                child_derivation_paths.insert(input_derivation_path.clone());
+            }
+        }
+        response.insert(derivation_path.clone(), current_node);
+    }
+    response
 }
