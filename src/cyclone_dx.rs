@@ -64,17 +64,16 @@ pub fn dump_derivation(
 
     let mut component_builder = ComponentBuilder::default();
 
-    component_builder
-        .bom_ref(derivation_path.to_string())
-        .name(package.name.to_string())
-        // .cpe("TODO".to_string())
-        // TODO application is the generic type, but we should also use file and library
-        // also, populate the mime_type in case of a file type.
-        .type_("application".to_string())
-        // I'm assuming here that if a package has been installed by Nix, it was required.
-        .scope("required".to_string())
-        .purl(package.get_purl())
-        .version(package.version.to_string());
+    component_builder.bom_ref(derivation_path.to_string());
+    component_builder.name(package.name.to_string());
+    // component_builder.cpe("TODO".to_string())
+    // TODO application is the generic type, but we should also use file and library
+    // also, populate the mime_type in case of a file type.
+    component_builder.type_("application".to_string());
+    // I'm assuming here that if a package has been installed by Nix, it was required.
+    component_builder.scope("required".to_string());
+    component_builder.purl(package.get_purl());
+    component_builder.version(package.version.to_string());
 
     if let Some(description) = &package.meta.description {
         component_builder.description(description.to_string());
