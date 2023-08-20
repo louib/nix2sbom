@@ -181,6 +181,15 @@ impl PackageMeta {
     pub fn get_licenses(&self) -> Vec<LicenseDetails> {
         vec![]
     }
+    pub fn get_homepages(&self) -> Vec<String> {
+        match &self.homepage {
+            Some(h) => match h {
+                Homepage::One(homepage) => vec![homepage.clone()],
+                Homepage::Many(homepages) => homepages.clone(),
+            },
+            None => vec![],
+        }
+    }
 }
 
 pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) -> Option<Package> {

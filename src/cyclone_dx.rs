@@ -4,7 +4,8 @@ use chrono::{DateTime, Utc};
 use serde::{de::Deserialize, ser::Serialize};
 
 use serde_cyclonedx::cyclonedx::v_1_4::{
-    Component, ComponentBuilder, CycloneDxBuilder, Metadata, ToolBuilder,
+    Component, ComponentBuilder, CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder,
+    Metadata, ToolBuilder,
 };
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
@@ -89,6 +90,20 @@ pub fn dump_derivation(
             component_builder.author(author);
         }
     }
+
+    let mut external_references: Vec<ExternalReference> = vec![];
+    for homepage in package.meta.get_homepages() {
+        // See https://docs.rs/serde-cyclonedx/latest/serde_cyclonedx/cyclonedx/v_1_5/struct.ExternalReference.html#structfield.type_
+        // for all the available external reference types
+        external_references.push(
+            ExternalReferenceBuilder::default()
+                .type_("website")
+                .url(homepage)
+                .build()
+                .unwrap(),
+        );
+    }
+    component_builder.external_references(external_references);
 
     Some(component_builder.build().unwrap())
 }
