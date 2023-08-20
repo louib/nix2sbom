@@ -14,6 +14,7 @@ mod cyclone_dx;
 mod logger;
 mod nix;
 mod sbom;
+mod utils;
 
 /// nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation
 #[derive(Parser)]

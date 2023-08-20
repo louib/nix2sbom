@@ -386,7 +386,9 @@ version = "0.0.0-placeholder-version"
 dependencies = [
  "chrono",
  "clap",
+ "lazy_static",
  "log",
+ "regex",
  "serde",
  "serde-cyclonedx",
  "serde_json",
