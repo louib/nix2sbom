@@ -2,14 +2,53 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::process::Command;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer};
 
 // This is a special file used By NixOS to represent the derivations
 // that were used to build the current system.
 const CURRENT_SYSTEM_PATH: &str = "/run/current-system";
 
 #[derive(Debug)]
-#[derive(Serialize)]
+#[derive(Deserialize)]
+#[derive(Clone)]
+pub enum DerivationBuilder {
+    FetchURL,
+    Bash,
+    Busybox,
+    Unknown,
+}
+
+impl DerivationBuilder {
+    pub fn from_string(builder: &str) -> Result<DerivationBuilder, String> {
+        if builder == "builtin:fetchurl" {
+            return Ok(DerivationBuilder::FetchURL);
+        }
+        if builder.ends_with("/bin/bash") {
+            return Ok(DerivationBuilder::Bash);
+        }
+        if builder.ends_with("busybox") {
+            return Ok(DerivationBuilder::Busybox);
+        }
+        Ok(DerivationBuilder::Unknown)
+        // Here I'd like to return an error when I'm developing, so that I could be aware of other
+        // builders found in the wild.
+        // Err(format!("Invalid derivation builder {}.", builder))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DerivationBuilder, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let buf = String::deserialize(deserializer)?;
+
+        match DerivationBuilder::from_string(&buf) {
+            Ok(b) => Ok(b),
+            Err(e) => Err(e).map_err(serde::de::Error::custom),
+        }
+    }
+}
+
+#[derive(Debug)]
 #[derive(Deserialize)]
 #[derive(Clone)]
 pub struct Derivation {
@@ -23,7 +62,8 @@ pub struct Derivation {
 
     system: String,
 
-    builder: String,
+    #[serde(deserialize_with = "DerivationBuilder::deserialize")]
+    builder: DerivationBuilder,
 
     args: Vec<String>,
 
@@ -72,10 +112,25 @@ impl Derivation {
     pub fn get_name(&self) -> Option<&String> {
         self.env.get("name")
     }
+
+    // Returns the store path of the stdenv used.
+    pub fn get_stdenv_path(&self) -> Option<&String> {
+        self.env.get("stdenv")
+    }
+
+    // Returns the store path of the stdenv used.
+    pub fn get_source_path(&self) -> Option<&String> {
+        self.env.get("src")
+    }
+
+    // Returns the store path of the stdenv used.
+    pub fn get_url(&self) -> Option<&String> {
+        // There's also a `urls` field that we could use here.
+        self.env.get("url")
+    }
 }
 
 #[derive(Debug)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 #[derive(Clone)]
 struct Output {
@@ -119,7 +174,6 @@ pub fn get_packages() -> Result<Packages, String> {
 }
 
 #[derive(Debug)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct Meta {
     pub packages: HashMap<String, PackageMeta>,
@@ -127,7 +181,6 @@ pub struct Meta {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct Package {
     // name of the derivation
@@ -156,7 +209,6 @@ impl Package {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct PackageMeta {
     pub available: Option<bool>,
@@ -201,7 +253,6 @@ pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) ->
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 #[serde(untagged)]
 pub enum Homepage {
@@ -211,7 +262,6 @@ pub enum Homepage {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct PackageMaintainer {
     pub email: String,
@@ -227,7 +277,6 @@ pub struct PackageMaintainer {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 #[serde(untagged)]
 pub enum License {
@@ -237,7 +286,6 @@ pub enum License {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 #[serde(untagged)]
 pub enum PackageLicense {
@@ -248,7 +296,6 @@ pub enum PackageLicense {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct LicenseDetails {
     pub free: Option<bool>,
