@@ -98,10 +98,20 @@ pub fn dump_derivation(
         external_references.push(
             ExternalReferenceBuilder::default()
                 .type_("website")
-                .url(homepage)
+                .url(homepage.to_string())
                 .build()
                 .unwrap(),
         );
+        if let Some(git_url) = crate::utils::get_git_url_from_generic_url(&homepage) {
+            log::warn!("Found git url {} for homepage {}", &git_url, &homepage);
+            external_references.push(
+                ExternalReferenceBuilder::default()
+                    .type_("vcs")
+                    .url(git_url)
+                    .build()
+                    .unwrap(),
+            );
+        }
     }
     component_builder.external_references(external_references);
 

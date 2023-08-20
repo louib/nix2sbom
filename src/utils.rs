@@ -42,7 +42,7 @@ lazy_static! {
 }
 lazy_static! {
     static ref NONGNU_PROJECT_REGEX: Regex =
-        Regex::new(r"https?://savannah.nongnu.org/download/([0-9a-zA-Z_-]+)").unwrap();
+        Regex::new(r"https?://savannah.nongnu.org/(?:download|projects)/([0-9a-zA-Z_-]+)").unwrap();
 }
 
 lazy_static! {
@@ -292,6 +292,14 @@ mod tests {
         assert_eq!(
             git_url.unwrap(),
             "https://git.savannah.nongnu.org/git/icoutils.git"
+        );
+
+        let git_url =
+            crate::utils::get_git_url_from_generic_url("https://savannah.nongnu.org/projects/acl");
+        assert!(git_url.is_some());
+        assert_eq!(
+            git_url.unwrap(),
+            "https://git.savannah.nongnu.org/git/acl.git"
         );
 
         let git_url = crate::utils::get_git_url_from_generic_url(
