@@ -177,6 +177,11 @@ pub struct PackageMeta {
 
     pub license: Option<License>,
 }
+impl PackageMeta {
+    pub fn get_licenses(&self) -> Vec<LicenseDetails> {
+        vec![]
+    }
+}
 
 pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) -> Option<Package> {
     if let Some(package) = packages.get(derivation_name) {

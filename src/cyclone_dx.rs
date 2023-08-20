@@ -67,18 +67,28 @@ pub fn dump_derivation(
     component_builder
         .bom_ref(derivation_path.to_string())
         .name(package.name.to_string())
-        .cpe("TODO".to_string())
+        // .cpe("TODO".to_string())
         // TODO application is the generic type, but we should also use file and library
         // also, populate the mime_type in case of a file type.
         .type_("application".to_string())
         // I'm assuming here that if a package has been installed by Nix, it was required.
         .scope("required".to_string())
         .purl(package.get_purl())
-        .publisher("TODO".to_string())
         .version(package.version.to_string());
 
     if let Some(description) = &package.meta.description {
         component_builder.description(description.to_string());
+    }
+
+    if let Some(maintainers) = &package.meta.maintainers {
+        let author = maintainers
+            .iter()
+            .map(|m| format!("{} ({})", m.name, m.email))
+            .collect::<Vec<String>>()
+            .join(" ");
+        if author.len() != 0 {
+            component_builder.author(author);
+        }
     }
 
     Some(component_builder.build().unwrap())
