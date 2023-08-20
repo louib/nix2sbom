@@ -6,7 +6,7 @@
 `nix2sbom` extracts the SBOM (Software Bill of Materials) from a Nix derivation
 
 > **Warning**
-> This repo is still a work-in-progress
+> This repo is still a work-in-progress.
   The command-line options and command names might change
   significantly until the project reaches version 1.0.0.
 
