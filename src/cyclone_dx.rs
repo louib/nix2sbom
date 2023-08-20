@@ -25,6 +25,12 @@ pub fn dump(derivations: &crate::nix::Derivations, packages: &crate::nix::Packag
 
     let mut components: Vec<Component> = vec![];
     for (derivation_path, derivation) in derivations.iter() {
+        match derivation.builder {
+            crate::nix::DerivationBuilder::FetchURL => {
+                log::debug!("Found derivation with a URL {}", &derivation_path);
+            }
+            _ => continue,
+        };
         if let Some(component) = dump_derivation(derivation_path, derivation, packages) {
             components.push(component);
         }

@@ -52,25 +52,25 @@ impl DerivationBuilder {
 #[derive(Deserialize)]
 #[derive(Clone)]
 pub struct Derivation {
-    outputs: HashMap<String, Output>,
+    pub outputs: HashMap<String, Output>,
 
     #[serde(rename = "inputSrcs")]
-    inputs_sources: Vec<String>,
+    pub inputs_sources: Vec<String>,
 
     #[serde(rename = "inputDrvs")]
-    input_derivations: HashMap<String, Vec<String>>,
+    pub input_derivations: HashMap<String, Vec<String>>,
 
-    system: String,
+    pub system: String,
 
     #[serde(deserialize_with = "DerivationBuilder::deserialize")]
-    builder: DerivationBuilder,
+    pub builder: DerivationBuilder,
 
-    args: Vec<String>,
+    pub args: Vec<String>,
 
-    env: HashMap<String, String>,
+    pub env: HashMap<String, String>,
 
     #[serde(flatten)]
-    extra: HashMap<String, serde_json::Value>,
+    pub extra: HashMap<String, serde_json::Value>,
 }
 
 pub type Derivations = HashMap<String, Derivation>;
@@ -133,7 +133,7 @@ impl Derivation {
 #[derive(Debug)]
 #[derive(Deserialize)]
 #[derive(Clone)]
-struct Output {
+pub struct Output {
     path: String,
 }
 
