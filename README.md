@@ -10,6 +10,12 @@
   The command-line options and command names might change
   significantly until the project reaches version 1.0.0.
 
+## Features
+* Generation of a SBOM based on the CycloneDX 1.4 format
+* Generation of a SBOM for your current `NixOS` system
+* Patch detection
+* Detection of the git URLs based on the archive URLs
+
 ## Installing
 
 ### With Nix
