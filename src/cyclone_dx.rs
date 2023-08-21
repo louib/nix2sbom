@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use serde::{de::Deserialize, ser::Serialize};
 
 use serde_cyclonedx::cyclonedx::v_1_4::{
-    Component, ComponentBuilder, CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder,
-    Metadata, ToolBuilder,
+    Component, ComponentBuilder, CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder, Metadata,
+    ToolBuilder,
 };
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
@@ -42,10 +42,7 @@ pub fn dump(package_graph: &crate::nix::PackageGraph) -> String {
     serde_json::to_string_pretty(&cyclonedx).unwrap()
 }
 
-pub fn dump_derivation(
-    derivation_path: &str,
-    package_node: &crate::nix::PackageNode,
-) -> Option<Component> {
+pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::PackageNode) -> Option<Component> {
     log::debug!("Dumping derivation for {}", &derivation_path);
     let mut component_builder = ComponentBuilder::default();
 
@@ -86,8 +83,14 @@ pub fn dump_derivation(
                 .build()
                 .unwrap(),
         );
-        if let Some(git_url) = crate::utils::get_git_url_from_generic_url(&homepage) {
-            log::warn!("Found git url {} for homepage {}", &git_url, &homepage);
+    }
+    for source in &package_node.sources {
+        let source_url = match source.get_url() {
+            Some(u) => u,
+            None => continue,
+        };
+        if let Some(git_url) = crate::utils::get_git_url_from_generic_url(&source_url) {
+            log::warn!("Found git url {} for source URL {}", &git_url, &source_url);
             external_references.push(
                 ExternalReferenceBuilder::default()
                     .type_("vcs")

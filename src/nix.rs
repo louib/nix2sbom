@@ -93,10 +93,7 @@ impl Derivation {
         Ok(flat_derivations)
     }
 
-    pub fn build_and_get_derivations(
-        file_path: &str,
-        derivation_ref: &str,
-    ) -> Result<Derivations, Error> {
+    pub fn build_and_get_derivations(file_path: &str, derivation_ref: &str) -> Result<Derivations, Error> {
         let derivation_path = format!("{}#{}", file_path, derivation_ref);
         let output = Command::new("nix")
             .arg("build")
@@ -138,6 +135,18 @@ impl Derivation {
         }
         None
     }
+
+    // Returns the out path of the patches for that derivation
+    pub fn get_patches(&self) -> Vec<String> {
+        if let Some(patches) = self.env.get("patches") {
+            let mut response: Vec<String> = vec![];
+            for patch in patches.split(" ") {
+                response.push(patch.to_string());
+            }
+            return response;
+        }
+        vec![]
+    }
 }
 
 #[derive(Debug)]
@@ -171,8 +180,7 @@ pub fn get_packages() -> Result<Packages, String> {
         .output()
         .map_err(|e| e.to_string())?;
 
-    let raw_packages: Packages =
-        serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
+    let raw_packages: Packages = serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
 
     let mut packages: Packages = Packages::default();
     // Re-index the packages using the internal package name.
@@ -327,8 +335,13 @@ pub struct LicenseDetails {
 #[derive(Debug)]
 pub struct PackageNode {
     pub main_derivation: Derivation,
+
     pub package: Package,
+
     pub sources: Vec<Derivation>,
+
+    pub patches: Vec<Derivation>,
+
     pub children: HashSet<String>,
 }
 
@@ -358,7 +371,9 @@ pub fn get_package_graph(
             main_derivation: derivation.clone(),
             children: HashSet::default(),
             sources: vec![],
+            patches: vec![],
         };
+        let current_node_patches = derivation.get_patches();
 
         let mut child_derivation_paths: BTreeSet<String> = BTreeSet::default();
         for input_derivation_path in derivation.input_derivations.keys() {
@@ -386,9 +401,7 @@ pub fn get_package_graph(
             };
             if child_derivation_name != "source" && packages.get(child_derivation_name).is_some() {
                 log::info!("Found a child derivation that is a main package!!!!!!");
-                current_node
-                    .children
-                    .insert(child_derivation_path.to_string());
+                current_node.children.insert(child_derivation_path.to_string());
                 // FIXME should we really continue here? Are there derivations that define both a
                 // package meta and urls to fetch?
                 continue;
@@ -401,7 +414,13 @@ pub fn get_package_graph(
                 continue;
             }
             if child_derivation.get_url().is_some() {
-                current_node.sources.push(child_derivation.clone());
+                if child_derivation.env.get("out").is_some()
+                    && current_node_patches.contains(child_derivation.env.get("out").unwrap())
+                {
+                    current_node.patches.push(child_derivation.clone());
+                } else {
+                    current_node.sources.push(child_derivation.clone());
+                }
             }
 
             for input_derivation_path in child_derivation.input_derivations.keys() {

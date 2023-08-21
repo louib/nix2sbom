@@ -2,13 +2,11 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 lazy_static! {
-    static ref SEMVER_REGEX: Regex =
-        Regex::new(r"([0-9]+.[0-9]+.[0-9]+)(-[0-9a-zA-Z_]+)?").unwrap();
+    static ref SEMVER_REGEX: Regex = Regex::new(r"([0-9]+.[0-9]+.[0-9]+)(-[0-9a-zA-Z_]+)?").unwrap();
 }
 
 lazy_static! {
-    static ref GIT_PROJECT_URL_REGEX: Regex =
-        Regex::new(r"https?://([0-9a-zA-Z/._-]+)\.git").unwrap();
+    static ref GIT_PROJECT_URL_REGEX: Regex = Regex::new(r"https?://([0-9a-zA-Z/._-]+)\.git").unwrap();
 }
 
 lazy_static! {
@@ -27,8 +25,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref PAGURE_PROJECT_REGEX: Regex =
-        Regex::new(r"https://pagure.io/([0-9a-zA-Z_-]+)").unwrap();
+    static ref PAGURE_PROJECT_REGEX: Regex = Regex::new(r"https://pagure.io/([0-9a-zA-Z_-]+)").unwrap();
 }
 
 lazy_static! {
@@ -49,6 +46,7 @@ lazy_static! {
     static ref BITBUCKET_PROJECT_REGEX: Regex =
         Regex::new(r"https?://bitbucket.org/([0-9a-zA-Z_-]+)/([0-9a-zA-Z_-]+)").unwrap();
 }
+
 pub fn get_git_url_from_generic_url(generic_url: &str) -> Option<String> {
     if let Some(git_url) = get_github_url_from_generic_url(generic_url) {
         return Some(git_url);
@@ -89,10 +87,7 @@ pub fn get_github_url_from_generic_url(generic_url: &str) -> Option<String> {
     }
     let user_name: String = captured_groups[1].to_string();
     let project_name: String = captured_groups[2].to_string();
-    return Some(format!(
-        "https://github.com/{}/{}.git",
-        user_name, project_name
-    ));
+    return Some(format!("https://github.com/{}/{}.git", user_name, project_name));
 }
 
 pub fn get_gitlab_url_from_generic_url(generic_url: &str) -> Option<String> {
@@ -105,10 +100,7 @@ pub fn get_gitlab_url_from_generic_url(generic_url: &str) -> Option<String> {
     }
     let user_name: String = captured_groups[1].to_string();
     let project_name: String = captured_groups[2].to_string();
-    return Some(format!(
-        "https://gitlab.com/{}/{}.git",
-        user_name, project_name
-    ));
+    return Some(format!("https://gitlab.com/{}/{}.git", user_name, project_name));
 }
 
 pub fn get_gnome_gitlab_url_from_generic_url(generic_url: &str) -> Option<String> {
@@ -148,10 +140,7 @@ pub fn get_gnu_url_from_generic_url(generic_url: &str) -> Option<String> {
         return None;
     }
     let project_name: String = captured_groups[1].to_string();
-    return Some(format!(
-        "https://git.savannah.gnu.org/git/{}.git",
-        project_name
-    ));
+    return Some(format!("https://git.savannah.gnu.org/git/{}.git", project_name));
 }
 
 pub fn get_nongnu_release_url_from_generic_url(generic_url: &str) -> Option<String> {
@@ -196,10 +185,7 @@ pub fn get_bitbucket_url_from_generic_url(generic_url: &str) -> Option<String> {
     }
     let username: String = captured_groups[1].to_string();
     let project_name: String = captured_groups[2].to_string();
-    return Some(format!(
-        "https://bitbucket.org/{}/{}.git",
-        username, project_name
-    ));
+    return Some(format!("https://bitbucket.org/{}/{}.git", username, project_name));
 }
 
 #[cfg(test)]
@@ -208,9 +194,8 @@ mod tests {
 
     #[test]
     pub fn test_get_git_url_from_generic_url() {
-        let git_url = crate::utils::get_git_url_from_generic_url(
-            "https://github.com/sass/libsass/archive/3.6.4.tar.gz",
-        );
+        let git_url =
+            crate::utils::get_git_url_from_generic_url("https://github.com/sass/libsass/archive/3.6.4.tar.gz");
         assert!(git_url.is_some());
         assert_eq!(git_url.unwrap(), "https://github.com/sass/libsass.git");
 
@@ -222,35 +207,21 @@ mod tests {
             "https://gitlab.com/rszibele/e-juice-calc/-/archive/1.0.7/e-juice-calc-1.0.7.tar.bz2",
         );
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://gitlab.com/rszibele/e-juice-calc.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://gitlab.com/rszibele/e-juice-calc.git");
 
-        let git_url =
-            crate::utils::get_git_url_from_generic_url("https://gitlab.com/rszibele/e-juice-calc");
+        let git_url = crate::utils::get_git_url_from_generic_url("https://gitlab.com/rszibele/e-juice-calc");
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://gitlab.com/rszibele/e-juice-calc.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://gitlab.com/rszibele/e-juice-calc.git");
 
         let git_url = crate::utils::get_git_url_from_generic_url(
             "https://gitlab.gnome.org/GNOME/libsecret/-/archive/0.19.1/libsecret-0.19.1.tar.gz",
         );
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://gitlab.gnome.org/GNOME/libsecret.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://gitlab.gnome.org/GNOME/libsecret.git");
 
-        let git_url =
-            crate::utils::get_git_url_from_generic_url("https://gitlab.gnome.org/GNOME/libsecret");
+        let git_url = crate::utils::get_git_url_from_generic_url("https://gitlab.gnome.org/GNOME/libsecret");
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://gitlab.gnome.org/GNOME/libsecret.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://gitlab.gnome.org/GNOME/libsecret.git");
 
         let git_url = crate::utils::get_git_url_from_generic_url(
             "https://pagure.io/libaio/archive/libaio-0.3.111/libaio-libaio-0.3.111.tar.gz",
@@ -262,19 +233,12 @@ mod tests {
             "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz",
         );
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://git.savannah.gnu.org/git/libiconv.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://git.savannah.gnu.org/git/libiconv.git");
 
-        let git_url = crate::utils::get_git_url_from_generic_url(
-            "http://ftp.gnu.org/gnu/autoconf/autoconf-2.13.tar.gz",
-        );
+        let git_url =
+            crate::utils::get_git_url_from_generic_url("http://ftp.gnu.org/gnu/autoconf/autoconf-2.13.tar.gz");
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://git.savannah.gnu.org/git/autoconf.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://git.savannah.gnu.org/git/autoconf.git");
 
         let git_url = crate::utils::get_git_url_from_generic_url(
             "https://download.savannah.nongnu.org/releases/openexr/openexr-2.2.1.tar.gz",
@@ -294,13 +258,9 @@ mod tests {
             "https://git.savannah.nongnu.org/git/icoutils.git"
         );
 
-        let git_url =
-            crate::utils::get_git_url_from_generic_url("https://savannah.nongnu.org/projects/acl");
+        let git_url = crate::utils::get_git_url_from_generic_url("https://savannah.nongnu.org/projects/acl");
         assert!(git_url.is_some());
-        assert_eq!(
-            git_url.unwrap(),
-            "https://git.savannah.nongnu.org/git/acl.git"
-        );
+        assert_eq!(git_url.unwrap(), "https://git.savannah.nongnu.org/git/acl.git");
 
         let git_url = crate::utils::get_git_url_from_generic_url(
             "https://bitbucket.org/Doomseeker/doomseeker/get/1.3.1.tar.bz2",

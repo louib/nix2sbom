@@ -1,3 +1,4 @@
 # https://rust-lang.github.io/rustfmt for all the options.
 merge_derives = false
+max_width = 112
 empty_item_single_line = false
