@@ -10,11 +10,7 @@ use serde_cyclonedx::cyclonedx::v_1_4::{
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
 
-pub fn dump(
-    package_graph: &crate::nix::PackageGraph,
-    derivations: &crate::nix::Derivations,
-    packages: &crate::nix::Packages,
-) -> String {
+pub fn dump(package_graph: &crate::nix::PackageGraph) -> String {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();
     let now: DateTime<Utc> = now.into();
