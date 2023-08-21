@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use serde::{de::Deserialize, ser::Serialize};
 
 use serde_cyclonedx::cyclonedx::v_1_4::{
-    Component, ComponentBuilder, CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder, Metadata,
-    ToolBuilder,
+    Commit, CommitBuilder, Component, ComponentBuilder, ComponentPedigree, ComponentPedigreeBuilder,
+    CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder, Metadata, ToolBuilder,
 };
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
@@ -101,6 +101,22 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
         }
     }
     component_builder.external_references(external_references);
+
+    if package_node.patches.len() != 0 {
+        let mut commits: Vec<Commit> = vec![];
+        for patch in &package_node.patches {
+            let mut commit = CommitBuilder::default();
+            commit.url(patch.get_url().unwrap());
+            // TODO we could also populate the uid, which is the commit SHA
+            commits.push(commit.build().unwrap())
+        }
+        component_builder.pedigree(
+            ComponentPedigreeBuilder::default()
+                .commits(commits)
+                .build()
+                .unwrap(),
+        );
+    }
 
     Some(component_builder.build().unwrap())
 }

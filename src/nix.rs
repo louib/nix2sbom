@@ -221,6 +221,9 @@ pub struct Package {
 }
 impl Package {
     pub fn get_purl(&self) -> String {
+        // FIXME this should not be using the nix scope, which does not actually exist.
+        // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+        // for the accepted scopes.
         format!("pkg:nix/{}@{}", self.name, self.version)
     }
 }
