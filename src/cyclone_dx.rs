@@ -5,7 +5,8 @@ use serde::{de::Deserialize, ser::Serialize};
 
 use serde_cyclonedx::cyclonedx::v_1_4::{
     Commit, CommitBuilder, Component, ComponentBuilder, ComponentPedigree, ComponentPedigreeBuilder,
-    CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder, Metadata, ToolBuilder,
+    CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder, License, LicenseBuilder, LicenseChoice,
+    Metadata, ToolBuilder,
 };
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
@@ -116,6 +117,35 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
                 .build()
                 .unwrap(),
         );
+    }
+
+    let mut licenses: Vec<LicenseChoice> = vec![];
+    for license in &package_node.package.meta.get_licenses() {
+        match license {
+            crate::nix::PackageLicense::Name(n) => {
+                licenses.push(LicenseChoice {
+                    expression: Some(n.to_string()),
+                    license: None,
+                });
+            }
+            crate::nix::PackageLicense::Details(license_details) => {
+                let mut license_builder = LicenseBuilder::default();
+                match &license_details.spdx_id {
+                    None => continue,
+                    Some(id) => license_builder.id(id),
+                };
+                if let Some(full_name) = &license_details.full_name {
+                    license_builder.name(full_name);
+                }
+                licenses.push(LicenseChoice {
+                    expression: None,
+                    license: Some(license_builder.build().unwrap()),
+                });
+            }
+        }
+    }
+    if licenses.len() != 0 {
+        component_builder.licenses(licenses);
     }
 
     Some(component_builder.build().unwrap())

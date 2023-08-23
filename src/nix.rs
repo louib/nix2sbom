@@ -251,8 +251,14 @@ pub struct PackageMeta {
     pub license: Option<License>,
 }
 impl PackageMeta {
-    pub fn get_licenses(&self) -> Vec<LicenseDetails> {
-        vec![]
+    pub fn get_licenses(&self) -> Vec<PackageLicense> {
+        match &self.license {
+            Some(h) => match h {
+                License::One(license) => vec![license.clone()],
+                License::Many(licenses) => licenses.clone(),
+            },
+            None => vec![],
+        }
     }
     pub fn get_homepages(&self) -> Vec<String> {
         match &self.homepage {
@@ -316,6 +322,7 @@ pub enum PackageLicense {
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 #[derive(Clone)]
 #[derive(Deserialize)]
 pub struct LicenseDetails {
