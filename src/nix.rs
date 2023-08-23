@@ -558,4 +558,55 @@ mod tests {
         let package: Package = serde_json::from_str(package_metadata).unwrap();
         assert_eq!(package.name, "0ad-0.0.26");
     }
+
+    #[test]
+    pub fn parse_package_metadata_embedded_maintainers_list() {
+        // This parsing issue was raised in https://github.com/louib/nix2sbom/issues/10
+        const package_metadata: &str = r###"
+          {
+            "meta": {
+              "available": true,
+              "broken": false,
+              "description": "A parser generator for building parsers from grammars",
+              "homepage": "https://javacc.github.io/javacc",
+              "insecure": false,
+              "license": {
+                "deprecated": false,
+                "free": true,
+                "fullName": "BSD 2-clause \"Simplified\" License",
+                "redistributable": true,
+                "shortName": "bsd2",
+                "spdxId": "BSD-2-Clause",
+                "url": "https://spdx.org/licenses/BSD-2-Clause.html"
+              },
+              "maintainers": [
+                [
+                  {
+                    "email": "limeytexan@gmail.com",
+                    "github": "limeytexan",
+                    "githubId": 36448130,
+                    "name": "Michael Brantley"
+                  }
+                ]
+              ],
+              "name": "javacc-7.0.10",
+              "outputsToInstall": [
+                "out"
+              ],
+              "unfree": false,
+              "unsupported": false
+            },
+            "name": "javacc-7.0.10",
+            "outputName": "out",
+            "outputs": {
+              "out": null
+            },
+            "pname": "javacc",
+            "system": "x86_64-linux",
+            "version": "7.0.10"
+          }
+        "###;
+        let package: Package = serde_json::from_str(package_metadata).unwrap();
+        assert_eq!(package.name, "javacc-7.0.10");
+    }
 }
