@@ -16,6 +16,24 @@
 * Patch detection
 * Detection of the git URLs based on the archive URLs
 
+## Using
+### With flakes
+The `-f` argument can be used to target a specific flake reference. For example, run the
+following command to generate a SBOM for the default package of the flake in the current directory:
+```
+nix2sbom -f .#
+```
+
+### On NixOS
+The SBOM for the current NixOS system can be obtained with the following command:
+```
+nix2sbom --current-system
+```
+
+### Logging
+The `NIX2SBOM_LOG_LEVEL` environment variable can be used to tune the logging level.
+The accepted values are `DEBUG`, `INFO`, `WARN` and `ERROR`. The default log level is `INFO`.
+
 ## Installing
 
 ### With Nix
@@ -28,9 +46,3 @@ nix profile install github:louib/nix2sbom
 ```
 cargo install --path .
 ```
-
-## Using
-
-### Logging
-The `NIX2SBOM_LOG_LEVEL` environment variable can be used to tune the logging level.
-The accepted values are `DEBUG`, `INFO`, `WARN` and `ERROR`. The default log level is `INFO`.
