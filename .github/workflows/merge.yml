@@ -19,3 +19,21 @@ jobs:
           override: true
       - name: run cargo test
         run: cargo test --all-features
+
+  publish:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - run: |
+          : build the nix flake
+          nix build .#
+      - uses: DeterminateSystems/flakehub-push@main
+        with:
+          visibility: "public"
+          rolling: true
