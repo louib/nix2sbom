@@ -440,3 +440,114 @@ pub fn get_package_graph(
     }
     response
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn parse_package_metadata() {
+        const package_metadata: &str = r###"
+          {
+            "name": "0ad-0.0.26",
+            "pname": "0ad",
+            "version": "0.0.26",
+            "system": "x86_64-linux",
+            "outputName": "out",
+            "outputs": {
+              "out": null
+            },
+            "meta": {
+              "available": true,
+              "broken": false,
+              "description": "A free, open-source game of ancient warfare",
+              "homepage": "https://play0ad.com/",
+              "insecure": false,
+              "license": [
+                {
+                  "deprecated": true,
+                  "free": true,
+                  "fullName": "GNU General Public License v2.0",
+                  "redistributable": true,
+                  "shortName": "gpl2",
+                  "spdxId": "GPL-2.0",
+                  "url": "https://spdx.org/licenses/GPL-2.0.html"
+                },
+                {
+                  "deprecated": true,
+                  "free": true,
+                  "fullName": "GNU Lesser General Public License v2.1",
+                  "redistributable": true,
+                  "shortName": "lgpl21",
+                  "spdxId": "LGPL-2.1",
+                  "url": "https://spdx.org/licenses/LGPL-2.1.html"
+                },
+                {
+                  "deprecated": false,
+                  "free": true,
+                  "fullName": "MIT License",
+                  "redistributable": true,
+                  "shortName": "mit",
+                  "spdxId": "MIT",
+                  "url": "https://spdx.org/licenses/MIT.html"
+                },
+                {
+                  "deprecated": false,
+                  "free": true,
+                  "fullName": "Creative Commons Attribution Share Alike 3.0",
+                  "redistributable": true,
+                  "shortName": "cc-by-sa-30",
+                  "spdxId": "CC-BY-SA-3.0",
+                  "url": "https://spdx.org/licenses/CC-BY-SA-3.0.html"
+                },
+                {
+                  "deprecated": false,
+                  "free": true,
+                  "fullName": "zlib License",
+                  "redistributable": true,
+                  "shortName": "zlib",
+                  "spdxId": "Zlib",
+                  "url": "https://spdx.org/licenses/Zlib.html"
+                }
+              ],
+              "maintainers": [
+                {
+                  "email": "nixpkgs@cvpetegem.be",
+                  "github": "chvp",
+                  "githubId": 42220376,
+                  "matrix": "@charlotte:vanpetegem.me",
+                  "name": "Charlotte Van Petegem"
+                }
+              ],
+              "name": "0ad-0.0.26",
+              "outputsToInstall": [
+                "out"
+              ],
+              "platforms": [
+                "aarch64-linux",
+                "armv5tel-linux",
+                "armv6l-linux",
+                "armv7a-linux",
+                "armv7l-linux",
+                "m68k-linux",
+                "microblaze-linux",
+                "microblazeel-linux",
+                "mipsel-linux",
+                "mips64el-linux",
+                "powerpc64-linux",
+                "powerpc64le-linux",
+                "riscv32-linux",
+                "riscv64-linux",
+                "s390-linux",
+                "s390x-linux",
+                "x86_64-linux"
+              ],
+              "unfree": false,
+              "unsupported": false
+            }
+          }
+        "###;
+        let package: Package = serde_json::from_str(package_metadata).unwrap();
+        assert_eq!(package.name, "0ad-0.0.26");
+    }
+}
