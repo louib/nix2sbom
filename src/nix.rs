@@ -403,7 +403,6 @@ pub fn get_package_graph(
                 }
             };
             if child_derivation_name != "source" && packages.get(child_derivation_name).is_some() {
-                log::info!("Found a child derivation that is a main package!!!!!!");
                 current_node.children.insert(child_derivation_path.to_string());
                 // FIXME should we really continue here? Are there derivations that define both a
                 // package meta and urls to fetch?
