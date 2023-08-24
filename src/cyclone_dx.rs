@@ -119,11 +119,20 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
         );
     }
 
-    let mut licenses: Vec<LicenseChoice> = vec![];
-    for license in &package_node.package.meta.get_licenses() {
+    let licenses = get_licenses(&package_node.package.meta.get_licenses());
+    if licenses.len() != 0 {
+        component_builder.licenses(licenses);
+    }
+
+    Some(component_builder.build().unwrap())
+}
+
+fn get_licenses(licenses: &Vec<crate::nix::PackageLicense>) -> Vec<LicenseChoice> {
+    let mut response: Vec<LicenseChoice> = vec![];
+    for license in licenses {
         match license {
             crate::nix::PackageLicense::Name(n) => {
-                licenses.push(LicenseChoice {
+                response.push(LicenseChoice {
                     expression: Some(n.to_string()),
                     license: None,
                 });
@@ -137,16 +146,12 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
                 if let Some(full_name) = &license_details.full_name {
                     license_builder.name(full_name);
                 }
-                licenses.push(LicenseChoice {
+                response.push(LicenseChoice {
                     expression: None,
                     license: Some(license_builder.build().unwrap()),
                 });
             }
         }
     }
-    if licenses.len() != 0 {
-        component_builder.licenses(licenses);
-    }
-
-    Some(component_builder.build().unwrap())
+    response
 }
