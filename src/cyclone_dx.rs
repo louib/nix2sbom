@@ -110,15 +110,12 @@ fn get_commits(patches: &Vec<crate::nix::Derivation>) -> Vec<Commit> {
 fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<ExternalReference> {
     let mut external_references: Vec<ExternalReference> = vec![];
     for homepage in package_node.package.meta.get_homepages() {
+        let mut external_reference_builder = ExternalReferenceBuilder::default();
         // See https://docs.rs/serde-cyclonedx/latest/serde_cyclonedx/cyclonedx/v_1_5/struct.ExternalReference.html#structfield.type_
         // for all the available external reference types
-        external_references.push(
-            ExternalReferenceBuilder::default()
-                .type_("website")
-                .url(homepage.to_string())
-                .build()
-                .unwrap(),
-        );
+        external_reference_builder.type_("website");
+        external_reference_builder.url(homepage.to_string());
+        external_references.push(external_reference_builder.build().unwrap());
     }
     for source in &package_node.sources {
         let source_url = match source.get_url() {
@@ -127,13 +124,10 @@ fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<Extern
         };
         if let Some(git_url) = crate::utils::get_git_url_from_generic_url(&source_url) {
             log::warn!("Found git url {} for source URL {}", &git_url, &source_url);
-            external_references.push(
-                ExternalReferenceBuilder::default()
-                    .type_("vcs")
-                    .url(git_url)
-                    .build()
-                    .unwrap(),
-            );
+            let mut external_reference_builder = ExternalReferenceBuilder::default();
+            external_reference_builder.type_("vcs");
+            external_reference_builder.url(git_url);
+            external_references.push(external_reference_builder.build().unwrap());
         }
     }
     external_references
