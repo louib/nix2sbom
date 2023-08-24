@@ -103,20 +103,11 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     }
     component_builder.external_references(external_references);
 
-    if package_node.patches.len() != 0 {
-        let mut commits: Vec<Commit> = vec![];
-        for patch in &package_node.patches {
-            let mut commit = CommitBuilder::default();
-            commit.url(patch.get_url().unwrap());
-            // TODO we could also populate the uid, which is the commit SHA
-            commits.push(commit.build().unwrap())
-        }
-        component_builder.pedigree(
-            ComponentPedigreeBuilder::default()
-                .commits(commits)
-                .build()
-                .unwrap(),
-        );
+    let commits = get_commits(&package_node.patches);
+    if commits.len() != 0 {
+        let mut pedigree_builder = ComponentPedigreeBuilder::default();
+        pedigree_builder.commits(commits);
+        component_builder.pedigree(pedigree_builder.build().unwrap());
     }
 
     let licenses = get_licenses(&package_node.package.meta.get_licenses());
@@ -125,6 +116,19 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     }
 
     Some(component_builder.build().unwrap())
+}
+fn get_commits(patches: &Vec<crate::nix::Derivation>) -> Vec<Commit> {
+    let mut response: Vec<Commit> = vec![];
+    if patches.len() != 0 {
+        let mut commits: Vec<Commit> = vec![];
+        for patch in patches {
+            let mut commit = CommitBuilder::default();
+            commit.url(patch.get_url().unwrap());
+            // TODO we could also populate the uid, which is the commit SHA
+            commits.push(commit.build().unwrap())
+        }
+    }
+    response
 }
 
 fn get_licenses(licenses: &Vec<crate::nix::PackageLicense>) -> Vec<LicenseChoice> {
