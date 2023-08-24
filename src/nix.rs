@@ -255,11 +255,26 @@ pub struct PackageMeta {
 
     pub homepage: Option<Homepage>,
 
-    pub maintainers: Option<Vec<PackageMaintainer>>,
+    pub maintainers: Option<PackageMaintainers>,
 
     pub license: Option<License>,
 }
 impl PackageMeta {
+    pub fn get_maintainers(&self) -> Vec<PackageMaintainer> {
+        match &self.maintainers {
+            Some(h) => match h {
+                PackageMaintainers::List(maintainers) => maintainers.clone(),
+                PackageMaintainers::EmbeddedList(lists) => {
+                    let mut maintainers: Vec<PackageMaintainer> = vec![];
+                    for list in lists {
+                        maintainers.append(&mut list.clone());
+                    }
+                    return maintainers;
+                }
+            },
+            None => vec![],
+        }
+    }
     pub fn get_licenses(&self) -> Vec<PackageLicense> {
         match &self.license {
             Some(h) => match h {
@@ -294,6 +309,17 @@ pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) ->
 pub enum Homepage {
     One(String),
     Many(Vec<String>),
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum PackageMaintainers {
+    List(Vec<PackageMaintainer>),
+    // FIXME this syntax is not officially supported, and the only known instance
+    // was fixed here https://github.com/NixOS/nixpkgs/commit/f14b6f553a7721b963cf10048adf35d08d5d0253
+    EmbeddedList(Vec<Vec<PackageMaintainer>>),
 }
 
 #[derive(Debug)]
@@ -608,5 +634,6 @@ mod tests {
         "###;
         let package: Package = serde_json::from_str(package_metadata).unwrap();
         assert_eq!(package.name, "javacc-7.0.10");
+        assert_eq!(package.meta.get_maintainers().len(), 1);
     }
 }
