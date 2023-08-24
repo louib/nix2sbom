@@ -62,7 +62,8 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
         component_builder.description(description.to_string());
     }
 
-    if let Some(maintainers) = &package_node.package.meta.maintainers {
+    let maintainers = package_node.package.meta.get_maintainers();
+    if maintainers.len() != 0 {
         let author = maintainers
             .iter()
             .map(|m| format!("{} ({})", m.name, m.email))
