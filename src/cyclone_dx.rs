@@ -123,7 +123,7 @@ fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<Extern
             None => continue,
         };
         if let Some(git_url) = crate::utils::get_git_url_from_generic_url(&source_url) {
-            log::warn!("Found git url {} for source URL {}", &git_url, &source_url);
+            log::debug!("Found git url {} for source URL {}", &git_url, &source_url);
             let mut external_reference_builder = ExternalReferenceBuilder::default();
             external_reference_builder.type_("vcs");
             external_reference_builder.url(git_url);

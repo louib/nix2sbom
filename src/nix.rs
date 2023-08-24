@@ -384,7 +384,6 @@ pub fn get_package_graph(
             Some(p) => p,
             None => continue,
         };
-        println!("{} is a main package", derivation_path);
         let mut current_node = PackageNode {
             package: package.clone(),
             main_derivation: derivation.clone(),
