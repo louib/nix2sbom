@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::fs;
 use std::io::Error;
 use std::process::Command;
 
@@ -166,21 +167,29 @@ pub fn get_derivation_path(store_path: &str) -> String {
     // TODO nix-store -qd store_path
     "".to_string()
 }
-pub fn get_packages() -> Result<Packages, String> {
-    // There is currently no way with Nix to generate the meta information
-    // only for a single derivation. We need to generate the meta for
-    // all the derivations in the store and then extract the information
-    // we want from the global meta database.
-    let output = Command::new("nix-env")
-        .arg("-q")
-        .arg("-a")
-        .arg("--meta")
-        .arg("--json")
-        .arg(".*")
-        .output()
-        .map_err(|e| e.to_string())?;
+pub fn get_packages(metadata_path: Option<String>) -> Result<Packages, String> {
+    let mut content: Vec<u8> = vec![];
+    if let Some(path) = metadata_path {
+        log::info!("Using the package metadata from {}", &path);
+        content = fs::read(path).map_err(|e| e.to_string())?;
+    } else {
+        log::info!("Getting the metadata for packages in the Nix store");
+        // There is currently no way with Nix to generate the meta information
+        // only for a single derivation. We need to generate the meta for
+        // all the derivations in the store and then extract the information
+        // we want from the global meta database.
+        let output = Command::new("nix-env")
+            .arg("-q")
+            .arg("-a")
+            .arg("--meta")
+            .arg("--json")
+            .arg(".*")
+            .output()
+            .map_err(|e| e.to_string())?;
+        content = output.stdout;
+    }
 
-    let raw_packages: Packages = serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
+    let raw_packages: Packages = serde_json::from_slice(&content).map_err(|e| e.to_string())?;
 
     let mut packages: Packages = Packages::default();
     // Re-index the packages using the internal package name.
