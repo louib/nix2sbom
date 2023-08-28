@@ -23,6 +23,13 @@ impl Format {
             crate::sbom::Format::SPDX => SPDX_NAME.to_string(),
         }
     }
+
+    pub fn get_default_serialization_format(&self) -> SerializationFormat {
+        match self {
+            crate::sbom::Format::CycloneDX => crate::sbom::SerializationFormat::JSON,
+            crate::sbom::Format::SPDX => crate::sbom::SerializationFormat::JSON,
+        }
+    }
 }
 
 impl Default for Format {
@@ -31,8 +38,26 @@ impl Default for Format {
     }
 }
 
-enum SerializationFormat {
+#[derive(Debug)]
+#[derive(PartialEq)]
+#[derive(Clone)]
+pub enum SerializationFormat {
     JSON,
     YAML,
     XML,
+}
+
+impl SerializationFormat {
+    pub fn from_string(format: &str) -> Option<SerializationFormat> {
+        if format.ends_with("json") {
+            return Some(SerializationFormat::JSON);
+        }
+        if format.ends_with("yaml") || format.ends_with("yml") {
+            return Some(SerializationFormat::YAML);
+        }
+        if format.ends_with("xml") {
+            return Some(SerializationFormat::XML);
+        }
+        None
+    }
 }
