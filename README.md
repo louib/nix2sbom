@@ -5,6 +5,8 @@
 
 `nix2sbom` extracts the SBOM (Software Bill of Materials) from a Nix derivation
 
+📚 Documentation for using `nix2sbom` is here -> https://github.com/louib/nix2sbom/wiki/Use-nix2sbom
+
 > **Warning**
 > This repo is still a work-in-progress.
   The command-line options and command names might change
@@ -16,24 +18,6 @@
 * Can generate a SBOM for your current `NixOS` system
 * Detects and handles patches
 * Discovers git URLs (using archive URLs)
-
-## Using
-### With flakes
-The `-f` argument can be used to target a specific flake reference. For example, run the
-following command to generate a SBOM for the default package of the flake in the current directory:
-```
-nix2sbom -f .#
-```
-
-### On NixOS
-The SBOM for the current NixOS system can be obtained with the following command:
-```
-nix2sbom --current-system
-```
-
-### Logging
-The `NIX2SBOM_LOG_LEVEL` environment variable can be used to tune the logging level.
-The accepted values are `DEBUG`, `INFO`, `WARN` and `ERROR`. The default log level is `INFO`.
 
 ## Installing
 
