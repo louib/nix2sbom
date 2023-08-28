@@ -15,7 +15,7 @@
 ## Features
 * Supports CycloneDX 1.4 format
 * Supports JSON and YAML serialization formats
-* Can generate a SBOM for your current `NixOS` system
+* Generates a SBOM for your current `NixOS` system
 * Detects and handles patches
 * Discovers git URLs (using archive URLs)
 
