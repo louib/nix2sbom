@@ -5,8 +5,8 @@ use serde::{de::Deserialize, ser::Serialize};
 
 use serde_cyclonedx::cyclonedx::v_1_4::{
     Commit, CommitBuilder, Component, ComponentBuilder, ComponentPedigree, ComponentPedigreeBuilder,
-    CycloneDxBuilder, ExternalReference, ExternalReferenceBuilder, License, LicenseBuilder, LicenseChoice,
-    Metadata, ToolBuilder,
+    CycloneDxBuilder, Dependency, DependencyBuilder, ExternalReference, ExternalReferenceBuilder, License,
+    LicenseBuilder, LicenseChoice, Metadata, ToolBuilder,
 };
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
@@ -31,12 +31,28 @@ pub fn dump(package_graph: &crate::nix::PackageGraph) -> String {
         }
     }
 
+    let mut dependencies: Vec<Dependency> = vec![];
+    for (derivation_path, package) in package_graph.iter() {
+        if package.children.len() == 0 {
+            continue;
+        }
+        let mut dependency_builder = DependencyBuilder::default();
+        dependency_builder.ref_(derivation_path);
+        let mut depends_on: Vec<String> = vec![];
+        for child in package.children.iter() {
+            depends_on.push(child.to_string());
+        }
+        dependency_builder.depends_on(depends_on);
+        dependencies.push(dependency_builder.build().unwrap());
+    }
+
     let cyclonedx = CycloneDxBuilder::default()
         .bom_format(crate::sbom::CYCLONE_DX_NAME)
         .spec_version(CURRENT_SPEC_VERSION)
         .version(1)
         .metadata(metadata)
         .components(components)
+        .dependencies(dependencies)
         .build()
         .unwrap();
 
