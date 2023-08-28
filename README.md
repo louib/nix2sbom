@@ -11,10 +11,11 @@
   significantly until the project reaches version 1.0.0.
 
 ## Features
-* Generation of a SBOM based on the CycloneDX 1.4 format
-* Generation of a SBOM for your current `NixOS` system
-* Patch detection
-* Detection of the git URLs based on the archive URLs
+* Supports CycloneDX 1.4 format
+* Supports JSON and YAML serialization formats
+* Can generate a SBOM for your current `NixOS` system
+* Detects and handles patches
+* Discovers git URLs (using archive URLs)
 
 ## Using
 ### With flakes

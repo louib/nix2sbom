@@ -11,7 +11,10 @@ use serde_cyclonedx::cyclonedx::v_1_4::{
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
 
-pub fn dump(package_graph: &crate::nix::PackageGraph) -> String {
+pub fn dump(
+    package_graph: &crate::nix::PackageGraph,
+    format: &crate::sbom::SerializationFormat,
+) -> Result<String, String> {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();
     let now: DateTime<Utc> = now.into();
@@ -56,7 +59,13 @@ pub fn dump(package_graph: &crate::nix::PackageGraph) -> String {
         .build()
         .unwrap();
 
-    serde_json::to_string_pretty(&cyclonedx).unwrap()
+    match format {
+        crate::sbom::SerializationFormat::JSON => {
+            serde_json::to_string_pretty(&cyclonedx).map_err(|e| e.to_string())
+        }
+        crate::sbom::SerializationFormat::YAML => serde_yaml::to_string(&cyclonedx).map_err(|e| e.to_string()),
+        crate::sbom::SerializationFormat::XML => Err("XML is not supported for CycloneDX".to_string()),
+    }
 }
 
 pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::PackageNode) -> Option<Component> {
