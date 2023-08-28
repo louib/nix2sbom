@@ -62,16 +62,8 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
         component_builder.description(description.to_string());
     }
 
-    let maintainers = package_node.package.meta.get_maintainers();
-    if maintainers.len() != 0 {
-        let author = maintainers
-            .iter()
-            .map(|m| format!("{} ({})", m.name, m.email))
-            .collect::<Vec<String>>()
-            .join(" ");
-        if author.len() != 0 {
-            component_builder.author(author);
-        }
+    if let Some(author) = get_author(&package_node) {
+        component_builder.author(author);
     }
 
     let mut external_references: Vec<ExternalReference> = get_external_references(&package_node);
@@ -92,6 +84,22 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     }
 
     Some(component_builder.build().unwrap())
+}
+
+fn get_author(package_node: &crate::nix::PackageNode) -> Option<String> {
+    let maintainers = package_node.package.meta.get_maintainers();
+    if maintainers.len() == 0 {
+        return None;
+    }
+    let author = maintainers
+        .iter()
+        .map(|m| format!("{} ({})", m.name, m.email))
+        .collect::<Vec<String>>()
+        .join(" ");
+    if author.len() != 0 {
+        return Some(author);
+    }
+    None
 }
 
 fn get_commits(patches: &Vec<crate::nix::Derivation>) -> Vec<Commit> {
