@@ -287,7 +287,10 @@ impl Package {
     pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         response.push(PrettyPrintLine::new(&self.pname, base_indent));
-        response.push(PrettyPrintLine::new(format!("purl: {}", &self.get_purl()), 1));
+        response.push(PrettyPrintLine::new(
+            format!("purl: {}", &self.get_purl()),
+            base_indent + 1,
+        ));
         if self.meta.broken.unwrap_or(false) {
             response.push(PrettyPrintLine::new("broken: true", base_indent + 1));
         }
@@ -470,7 +473,7 @@ impl PackageNode {
         if self.sources.len() != 0 {
             lines.push(PrettyPrintLine::new("sources:", base_indent + 1));
             for source in &self.sources {
-                for line in source.pretty_print(1) {
+                for line in source.pretty_print(base_indent + 1) {
                     lines.push(line);
                 }
             }
