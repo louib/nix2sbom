@@ -458,7 +458,7 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
-    pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, graph: &PackageGraph, base_indent: usize) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
 
         for line in self.package.pretty_print(base_indent) {
@@ -485,7 +485,20 @@ impl PackageNode {
         }
         if self.children.len() != 0 {
             for child_package_derivation_path in self.children.iter() {
-                // lines.concat(child_package.pretty_print(base_indent + 1));
+                let child_package = match graph.get(child_package_derivation_path) {
+                    Some(p) => p,
+                    None => {
+                        log::warn!(
+                            "Could not get package in package graph for {}",
+                            &child_package_derivation_path
+                        );
+                        continue;
+                    }
+                };
+
+                for line in child_package.pretty_print(&graph, base_indent + 1) {
+                    lines.push(line);
+                }
             }
         }
         lines
@@ -494,11 +507,26 @@ impl PackageNode {
 
 pub type PackageGraph = HashMap<String, PackageNode>;
 
-fn add_visited_children(package_node: &PackageNode, visited_children: &mut HashSet<String>) {
+fn add_visited_children(
+    package_node: &PackageNode,
+    package_graph: &PackageGraph,
+    visited_children: &mut HashSet<String>,
+) {
     for child_derivation_path in &package_node.children {
         visited_children.insert(child_derivation_path.to_string());
+        let child_package = match package_graph.get(child_derivation_path) {
+            Some(p) => p,
+            None => {
+                log::warn!(
+                    "Could not get package in package graph for {}",
+                    &child_derivation_path
+                );
+                continue;
+            }
+        };
+
+        add_visited_children(&child_package, &package_graph, visited_children);
     }
-    // TODO also visit the child nodes.
 }
 
 pub fn pretty_print_package_graph(package_graph: &PackageGraph, base_indent: usize) -> String {
@@ -509,15 +537,15 @@ pub fn pretty_print_package_graph(package_graph: &PackageGraph, base_indent: usi
     for (derivation_path, package_node) in package_graph {
         for child_derivation_path in &package_node.children {
             let child = package_graph.get(child_derivation_path).unwrap().clone();
-            add_visited_children(child, &mut visited_children);
+            add_visited_children(child, &package_graph, &mut visited_children);
         }
-        for line in package_node.pretty_print(base_indent) {
+        for line in package_node.pretty_print(&package_graph, base_indent) {
             lines.push(line);
         }
     }
 
     for (derivation_path, package_node) in package_graph {
-        for line in package_node.pretty_print(base_indent) {
+        for line in package_node.pretty_print(package_graph, base_indent) {
             lines.push(line);
         }
     }
