@@ -152,9 +152,9 @@ impl Derivation {
     pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         if let Some(name) = self.get_name() {
-            response.push(PrettyPrintLine::new(name, 0));
+            response.push(PrettyPrintLine::new(name, 1));
         } else {
-            response.push(PrettyPrintLine::new("unknown derivation?", 0));
+            response.push(PrettyPrintLine::new("unknown derivation?", 1));
         }
         if let Some(url) = self.get_url() {
             response.push(PrettyPrintLine::new(format!("url: {}", url), 1));
@@ -270,7 +270,7 @@ impl Package {
 
     pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
-        response.push(PrettyPrintLine::new("pname", 0));
+        response.push(PrettyPrintLine::new(&self.pname, 0));
         response.push(PrettyPrintLine::new(format!("purl: {}", &self.get_purl()), 1));
         if self.meta.broken.unwrap_or(false) {
             response.push(PrettyPrintLine::new("broken: true", 1));
@@ -443,8 +443,15 @@ pub struct PackageNode {
 
 impl PackageNode {
     pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
-        let mut response: Vec<PrettyPrintLine> = vec![];
-        response
+        let mut lines: Vec<PrettyPrintLine> = vec![];
+
+        for line in self.package.pretty_print() {
+            lines.push(line);
+        }
+        for line in self.main_derivation.pretty_print() {
+            lines.push(line);
+        }
+        lines
     }
 }
 
@@ -455,10 +462,7 @@ pub fn pretty_print_package_graph(package_graph: &PackageGraph) -> String {
     let mut response = "".to_string();
 
     for (derivation_path, package_node) in package_graph {
-        for line in package_node.package.pretty_print() {
-            lines.push(line);
-        }
-        for line in package_node.main_derivation.pretty_print() {
+        for line in package_node.pretty_print() {
             lines.push(line);
         }
     }
