@@ -284,21 +284,21 @@ impl Package {
         format!("pkg:nix/{}@{}", self.name, self.version)
     }
 
-    pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
-        response.push(PrettyPrintLine::new(&self.pname, 0));
+        response.push(PrettyPrintLine::new(&self.pname, base_indent));
         response.push(PrettyPrintLine::new(format!("purl: {}", &self.get_purl()), 1));
         if self.meta.broken.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("broken: true", 1));
+            response.push(PrettyPrintLine::new("broken: true", base_indent + 1));
         }
         if self.meta.insecure.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("insecure: true", 1));
+            response.push(PrettyPrintLine::new("insecure: true", base_indent + 1));
         }
         if self.meta.unfree.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("unfree: true", 1));
+            response.push(PrettyPrintLine::new("unfree: true", base_indent + 1));
         }
         if self.meta.unsupported.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("unsupported: true", 1));
+            response.push(PrettyPrintLine::new("unsupported: true", base_indent + 1));
         }
         response
     }
@@ -458,17 +458,17 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
-    pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
 
-        for line in self.package.pretty_print() {
+        for line in self.package.pretty_print(base_indent) {
             lines.push(line);
         }
-        for line in self.main_derivation.pretty_print(0) {
+        for line in self.main_derivation.pretty_print(base_indent) {
             lines.push(line);
         }
         if self.sources.len() != 0 {
-            lines.push(PrettyPrintLine::new("sources:", 1));
+            lines.push(PrettyPrintLine::new("sources:", base_indent + 1));
             for source in &self.sources {
                 for line in source.pretty_print(1) {
                     lines.push(line);
@@ -476,9 +476,9 @@ impl PackageNode {
             }
         }
         if self.patches.len() != 0 {
-            lines.push(PrettyPrintLine::new("patches:", 1));
+            lines.push(PrettyPrintLine::new("patches:", base_indent + 1));
             for patch in &self.patches {
-                for line in patch.pretty_print(1) {
+                for line in patch.pretty_print(base_indent + 1) {
                     lines.push(line);
                 }
             }
@@ -489,12 +489,12 @@ impl PackageNode {
 
 pub type PackageGraph = HashMap<String, PackageNode>;
 
-pub fn pretty_print_package_graph(package_graph: &PackageGraph) -> String {
+pub fn pretty_print_package_graph(package_graph: &PackageGraph, base_indent: usize) -> String {
     let mut lines: Vec<PrettyPrintLine> = vec![];
     let mut response = "".to_string();
 
     for (derivation_path, package_node) in package_graph {
-        for line in package_node.pretty_print() {
+        for line in package_node.pretty_print(base_indent) {
             lines.push(line);
         }
     }
