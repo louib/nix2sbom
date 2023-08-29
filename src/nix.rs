@@ -148,6 +148,20 @@ impl Derivation {
         }
         vec![]
     }
+
+    pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
+        let mut response: Vec<PrettyPrintLine> = vec![];
+        if let Some(name) = self.get_name() {
+            response.push(PrettyPrintLine::new(name, 0));
+        } else {
+            response.push(PrettyPrintLine::new("unknown derivation?", 0));
+        }
+        if let Some(url) = self.get_url() {
+            response.push(PrettyPrintLine::new(format!("url: {}", url), 1));
+        }
+
+        response
+    }
 }
 
 #[derive(Debug)]
@@ -204,6 +218,24 @@ pub fn get_packages(metadata_path: Option<String>) -> Result<Packages, String> {
 #[derive(Deserialize)]
 pub struct Meta {
     pub packages: HashMap<String, PackageMeta>,
+}
+
+#[derive(Debug)]
+#[derive(Default)]
+pub struct PackageURL {
+    pub scheme: String,
+    pub host: String,
+    pub path: Vec<String>,
+    pub query_params: HashMap<String, String>,
+}
+
+impl PackageURL {
+    pub fn to_string(&self) -> String {
+        let mut full_path = self.path.join("/");
+
+        // TODO add the query params
+        format!("{}://{}/{}", self.scheme, self.host, full_path)
+    }
 }
 
 #[derive(Debug)]
@@ -409,7 +441,34 @@ pub struct PackageNode {
     pub children: HashSet<String>,
 }
 
+impl PackageNode {
+    pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
+        let mut response: Vec<PrettyPrintLine> = vec![];
+        response
+    }
+}
+
 pub type PackageGraph = HashMap<String, PackageNode>;
+
+pub fn pretty_print_package_graph(package_graph: &PackageGraph) -> String {
+    let mut lines: Vec<PrettyPrintLine> = vec![];
+    let mut response = "".to_string();
+
+    for (derivation_path, package_node) in package_graph {
+        for line in package_node.package.pretty_print() {
+            lines.push(line);
+        }
+        for line in package_node.main_derivation.pretty_print() {
+            lines.push(line);
+        }
+    }
+
+    for line in lines {
+        response += &line.to_string();
+        response += "\n";
+    }
+    response
+}
 
 // Small struct to make it easier to pretty-print the
 // internal representation for the package graph.

@@ -26,7 +26,7 @@ struct NixToSBOM {
     #[clap(long, short)]
     file_path: Option<String>,
 
-    /// Output format for the SBOM manifest. Defaults to CycloneDX
+    /// Output format for the SBOM manifest. Defaults to cdx (CycloneDX).
     #[clap(long)]
     format: Option<String>,
 
@@ -112,6 +112,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
                 crate::sbom::Format::SPDX.to_pretty_name()
             );
             return Ok(std::process::ExitCode::FAILURE);
+        }
+        crate::sbom::Format::PrettyPrint => {
+            println!("{}", crate::nix::pretty_print_package_graph(&package_graph));
         }
     };
 

@@ -1,9 +1,11 @@
 pub const CYCLONE_DX_NAME: &str = "CycloneDX";
 pub const SPDX_NAME: &str = "SPDX";
+pub const PRETTY_PRINT_NAME: &str = "pretty-print";
 
 pub enum Format {
     SPDX,
     CycloneDX,
+    PrettyPrint,
 }
 
 impl Format {
@@ -14,6 +16,9 @@ impl Format {
         if format.ends_with("cdx") {
             return Some(Format::CycloneDX);
         }
+        if format.ends_with("pretty") {
+            return Some(Format::PrettyPrint);
+        }
         None
     }
 
@@ -21,6 +26,7 @@ impl Format {
         match self {
             crate::sbom::Format::CycloneDX => CYCLONE_DX_NAME.to_string(),
             crate::sbom::Format::SPDX => SPDX_NAME.to_string(),
+            crate::sbom::Format::PrettyPrint => PRETTY_PRINT_NAME.to_string(),
         }
     }
 
@@ -28,6 +34,8 @@ impl Format {
         match self {
             crate::sbom::Format::CycloneDX => crate::sbom::SerializationFormat::JSON,
             crate::sbom::Format::SPDX => crate::sbom::SerializationFormat::JSON,
+            // We don't really care which value is returned in this case.
+            crate::sbom::Format::PrettyPrint => crate::sbom::SerializationFormat::XML,
         }
     }
 }
