@@ -235,6 +235,25 @@ impl Package {
         // for the accepted scopes.
         format!("pkg:nix/{}@{}", self.name, self.version)
     }
+
+    pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
+        let mut response: Vec<PrettyPrintLine> = vec![];
+        response.push(PrettyPrintLine::new("pname", 0));
+        response.push(PrettyPrintLine::new(format!("purl: {}", &self.get_purl()), 1));
+        if self.meta.broken.unwrap_or(false) {
+            response.push(PrettyPrintLine::new("broken: true", 1));
+        }
+        if self.meta.insecure.unwrap_or(false) {
+            response.push(PrettyPrintLine::new("insecure: true", 1));
+        }
+        if self.meta.unfree.unwrap_or(false) {
+            response.push(PrettyPrintLine::new("unfree: true", 1));
+        }
+        if self.meta.unsupported.unwrap_or(false) {
+            response.push(PrettyPrintLine::new("unsupported: true", 1));
+        }
+        response
+    }
 }
 
 #[derive(Debug)]
@@ -391,6 +410,26 @@ pub struct PackageNode {
 }
 
 pub type PackageGraph = HashMap<String, PackageNode>;
+
+// Small struct to make it easier to pretty-print the
+// internal representation for the package graph.
+#[derive(Debug)]
+struct PrettyPrintLine {
+    pub indent_level: usize,
+    pub line: String,
+}
+impl PrettyPrintLine {
+    pub fn new<S: AsRef<str>>(line: S, indent_level: usize) -> PrettyPrintLine {
+        PrettyPrintLine {
+            line: line.as_ref().to_string(),
+            indent_level,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        "  ".repeat(self.indent_level) + &self.line
+    }
+}
 
 pub fn get_package_graph(
     derivations: &crate::nix::Derivations,
