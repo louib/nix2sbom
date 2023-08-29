@@ -483,6 +483,11 @@ impl PackageNode {
                 }
             }
         }
+        if self.children.len() != 0 {
+            for child_package_derivation_path in self.children.iter() {
+                // lines.concat(child_package.pretty_print(base_indent + 1));
+            }
+        }
         lines
     }
 }
