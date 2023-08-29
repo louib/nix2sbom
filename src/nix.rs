@@ -129,12 +129,28 @@ impl Derivation {
         if let Some(urls) = self.env.get("urls") {
             // FIXME I'm not sure that this is the right separator!!
             // FIXME How whould we handle multiple URLs???
-            match urls.split(",").nth(0) {
+            match urls.split(" ").nth(0) {
                 Some(u) => return Some(u.to_string()),
                 None => return None,
             }
         }
         None
+    }
+
+    // Returns the store path of the stdenv used.
+    pub fn get_urls(&self) -> Vec<String> {
+        let mut response: Vec<String> = vec![];
+        if let Some(url) = self.env.get("url") {
+            for url in url.split(" ").collect::<Vec<_>>() {
+                response.push(url.to_string());
+            }
+        }
+        if let Some(urls) = self.env.get("urls") {
+            for url in urls.split(" ").collect::<Vec<_>>() {
+                response.push(url.to_string());
+            }
+        }
+        response
     }
 
     // Returns the out path of the patches for that derivation
@@ -149,17 +165,17 @@ impl Derivation {
         vec![]
     }
 
-    pub fn pretty_print(&self) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
+        for url in self.get_urls() {
+            response.push(PrettyPrintLine::new(url, base_indent + 1));
+            return response;
+        }
         if let Some(name) = self.get_name() {
-            response.push(PrettyPrintLine::new(name, 1));
-        } else {
-            response.push(PrettyPrintLine::new("unknown derivation?", 1));
+            response.push(PrettyPrintLine::new(name, base_indent + 1));
+            return response;
         }
-        if let Some(url) = self.get_url() {
-            response.push(PrettyPrintLine::new(format!("url: {}", url), 1));
-        }
-
+        response.push(PrettyPrintLine::new("unknown derivation?", base_indent + 1));
         response
     }
 }
@@ -448,8 +464,24 @@ impl PackageNode {
         for line in self.package.pretty_print() {
             lines.push(line);
         }
-        for line in self.main_derivation.pretty_print() {
+        for line in self.main_derivation.pretty_print(0) {
             lines.push(line);
+        }
+        if self.sources.len() != 0 {
+            lines.push(PrettyPrintLine::new("sources:", 1));
+            for source in &self.sources {
+                for line in source.pretty_print(1) {
+                    lines.push(line);
+                }
+            }
+        }
+        if self.patches.len() != 0 {
+            lines.push(PrettyPrintLine::new("patches:", 1));
+            for patch in &self.patches {
+                for line in patch.pretty_print(1) {
+                    lines.push(line);
+                }
+            }
         }
         lines
     }
