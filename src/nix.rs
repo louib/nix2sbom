@@ -494,9 +494,27 @@ impl PackageNode {
 
 pub type PackageGraph = HashMap<String, PackageNode>;
 
+fn add_visited_children(package_node: &PackageNode, visited_children: &mut HashSet<String>) {
+    for child_derivation_path in &package_node.children {
+        visited_children.insert(child_derivation_path.to_string());
+    }
+    // TODO also visit the child nodes.
+}
+
 pub fn pretty_print_package_graph(package_graph: &PackageGraph, base_indent: usize) -> String {
     let mut lines: Vec<PrettyPrintLine> = vec![];
     let mut response = "".to_string();
+
+    let mut visited_children: HashSet<String> = HashSet::default();
+    for (derivation_path, package_node) in package_graph {
+        for child_derivation_path in &package_node.children {
+            let child = package_graph.get(child_derivation_path).unwrap().clone();
+            add_visited_children(child, &mut visited_children);
+        }
+        for line in package_node.pretty_print(base_indent) {
+            lines.push(line);
+        }
+    }
 
     for (derivation_path, package_node) in package_graph {
         for line in package_node.pretty_print(base_indent) {
