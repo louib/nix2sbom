@@ -114,7 +114,14 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
             return Ok(std::process::ExitCode::FAILURE);
         }
         crate::sbom::Format::PrettyPrint => {
-            println!("{}", crate::nix::pretty_print_package_graph(&package_graph, 0));
+            let display_options = crate::nix::DisplayOptions {
+                print_stdenv: false,
+                print_exclude_list: vec![],
+            };
+            println!(
+                "{}",
+                crate::nix::pretty_print_package_graph(&package_graph, 0, &display_options,)
+            );
         }
     };
 

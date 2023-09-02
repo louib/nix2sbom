@@ -29,7 +29,7 @@ pub fn dump(
 
     let mut components: Vec<Component> = vec![];
     for (derivation_path, package) in package_graph.iter() {
-        if let Some(component) = dump_derivation(derivation_path, package) {
+        if let Some(component) = dump_package_node(derivation_path, package, package_graph) {
             components.push(component);
         }
     }
@@ -66,6 +66,42 @@ pub fn dump(
         crate::sbom::SerializationFormat::YAML => serde_yaml::to_string(&cyclonedx).map_err(|e| e.to_string()),
         crate::sbom::SerializationFormat::XML => Err("XML is not supported for CycloneDX".to_string()),
     }
+}
+
+pub fn dump_package_node(
+    package_derivation_path: &str,
+    package_node: &crate::nix::PackageNode,
+    package_graph: &crate::nix::PackageGraph,
+) -> Option<Component> {
+    let mut component = dump_derivation(package_derivation_path, package_node);
+    let mut sub_components: Vec<Component> = vec![];
+    let main_source_path = package_node.main_derivation.get_source_path();
+    for child in &package_node.sources {
+        // FIXME not sure about that one
+        let child_derivation_path = child.get_source_path();
+        if main_source_path == child_derivation_path {
+            continue;
+        }
+        if let Some(component) = dump_sub_derivation(&child) {
+            sub_components.push(component);
+        }
+    }
+    component
+}
+
+pub fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Component> {
+    log::debug!(
+        "Dumping sub-derivation for {}",
+        &derivation.get_name().unwrap_or(&"UNKNOWN".to_string())
+    );
+    let mut component_builder = ComponentBuilder::default();
+    component_builder.bom_ref(derivation.get_source_path().unwrap().to_string());
+    component_builder.name(derivation.get_name().unwrap().to_string());
+    component_builder.scope("required".to_string());
+    if let Ok(component) = component_builder.build() {
+        return Some(component);
+    }
+    None
 }
 
 pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::PackageNode) -> Option<Component> {
