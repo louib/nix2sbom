@@ -19,6 +19,49 @@ pub enum DerivationBuilder {
     Unknown,
 }
 
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Default)]
+pub struct DisplayOptions {
+    pub print_stdenv: bool,
+    pub print_exclude_list: Vec<String>,
+}
+
+pub fn is_stdenv(name: &str) -> bool {
+    let stdenv_names = vec![
+        "stdenv-linux",
+        // TODO probably other stdenv- derivatives to add
+        // to this list
+        "acl",
+        "db",
+        "attr",
+        "patch",
+        "bzip2",
+        "patchelf",
+        "pkg-config",
+        "gnum4",
+        // "isl", ????
+        // "gmp-with-cxx", ????
+        "automake",
+        "autoconf",
+        "libtool",
+        "libffi",
+        "zlib",
+        "bison",
+        "which",
+        // "expat", ????
+        "unzip",
+        "findutils",
+        "flex",
+    ];
+    for stdenv_name in stdenv_names {
+        if name.starts_with(stdenv_name) {
+            return true;
+        }
+    }
+    false
+}
+
 impl DerivationBuilder {
     pub fn from_string(builder: &str) -> Result<DerivationBuilder, String> {
         if builder == "builtin:fetchurl" {
@@ -116,7 +159,7 @@ impl Derivation {
         self.env.get("stdenv")
     }
 
-    // Returns the store path of the stdenv used.
+    // Returns the store path of the source
     pub fn get_source_path(&self) -> Option<&String> {
         self.env.get("src")
     }
@@ -165,7 +208,7 @@ impl Derivation {
         vec![]
     }
 
-    pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, base_indent: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         for url in self.get_urls() {
             response.push(PrettyPrintLine::new(url, base_indent + 1));
@@ -284,7 +327,7 @@ impl Package {
         format!("pkg:nix/{}@{}", self.name, self.version)
     }
 
-    pub fn pretty_print(&self, base_indent: usize) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, base_indent: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         response.push(PrettyPrintLine::new(&self.pname, base_indent));
         response.push(PrettyPrintLine::new(
@@ -461,19 +504,24 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
-    pub fn pretty_print(&self, graph: &PackageGraph, base_indent: usize) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(
+        &self,
+        graph: &PackageGraph,
+        base_indent: usize,
+        display_options: &DisplayOptions,
+    ) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
 
-        for line in self.package.pretty_print(base_indent) {
+        for line in self.package.pretty_print(base_indent, display_options) {
             lines.push(line);
         }
-        for line in self.main_derivation.pretty_print(base_indent) {
+        for line in self.main_derivation.pretty_print(base_indent, display_options) {
             lines.push(line);
         }
         if self.sources.len() != 0 {
             lines.push(PrettyPrintLine::new("sources:", base_indent + 1));
             for source in &self.sources {
-                for line in source.pretty_print(base_indent + 1) {
+                for line in source.pretty_print(base_indent + 1, display_options) {
                     lines.push(line);
                 }
             }
@@ -481,7 +529,7 @@ impl PackageNode {
         if self.patches.len() != 0 {
             lines.push(PrettyPrintLine::new("patches:", base_indent + 1));
             for patch in &self.patches {
-                for line in patch.pretty_print(base_indent + 1) {
+                for line in patch.pretty_print(base_indent + 1, display_options) {
                     lines.push(line);
                 }
             }
@@ -498,8 +546,12 @@ impl PackageNode {
                         continue;
                     }
                 };
+                if !display_options.print_stdenv && is_stdenv(child_package.main_derivation.get_name().unwrap())
+                {
+                    continue;
+                }
 
-                for line in child_package.pretty_print(&graph, base_indent + 1) {
+                for line in child_package.pretty_print(&graph, base_indent + 1, display_options) {
                     lines.push(line);
                 }
             }
@@ -532,7 +584,11 @@ fn add_visited_children(
     }
 }
 
-pub fn pretty_print_package_graph(package_graph: &PackageGraph, base_indent: usize) -> String {
+pub fn pretty_print_package_graph(
+    package_graph: &PackageGraph,
+    base_indent: usize,
+    display_options: &DisplayOptions,
+) -> String {
     let mut lines: Vec<PrettyPrintLine> = vec![];
     let mut response = "".to_string();
 
@@ -542,13 +598,13 @@ pub fn pretty_print_package_graph(package_graph: &PackageGraph, base_indent: usi
             let child = package_graph.get(child_derivation_path).unwrap().clone();
             add_visited_children(child, &package_graph, &mut visited_children);
         }
-        for line in package_node.pretty_print(&package_graph, base_indent) {
-            lines.push(line);
-        }
     }
 
     for (derivation_path, package_node) in package_graph {
-        for line in package_node.pretty_print(package_graph, base_indent) {
+        if !display_options.print_stdenv && is_stdenv(package_node.main_derivation.get_name().unwrap()) {
+            continue;
+        }
+        for line in package_node.pretty_print(package_graph, base_indent, display_options) {
             lines.push(line);
         }
     }
