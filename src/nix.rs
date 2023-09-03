@@ -493,10 +493,23 @@ pub struct PackageNode {
 
 impl PackageNode {
     pub fn get_purl(&self) -> Option<String> {
+        let mut version: Option<String> = None;
+        if !self.package.version.is_empty() {
+            version = Some(self.package.version.to_string());
+        }
         if self.main_derivation.get_urls().len() != 0 {
             let urls = self.main_derivation.get_urls();
             let url = urls.get(0).unwrap();
-            if url.starts_with("https://github.com/") {
+            if version.is_none() {
+                version = crate::utils::get_semver_from_archive_url(url);
+            }
+            if url.starts_with("https://crates.io") {}
+            if url.starts_with("https://bitbucket.org") {}
+            if url.starts_with("https://registry.npmjs.org") {}
+            if url.starts_with("https://pypi.python.org") {}
+            // TODO gitlab ??
+            // TODO openwrt ??
+            if url.starts_with("https://github.com") {
                 // let namespace = "";
                 // return Some(format!(
                 //     "pkg:github/{}/{}@{}",
