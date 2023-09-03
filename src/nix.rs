@@ -320,20 +320,8 @@ pub struct Package {
     pub meta: PackageMeta,
 }
 impl Package {
-    pub fn get_purl(&self) -> String {
-        // FIXME this should not be using the nix scope, which does not actually exist.
-        // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
-        // for the accepted scopes.
-        format!("pkg:nix/{}@{}", self.name, self.version)
-    }
-
     pub fn pretty_print(&self, base_indent: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
-        response.push(PrettyPrintLine::new(&self.pname, base_indent));
-        response.push(PrettyPrintLine::new(
-            format!("purl: {}", &self.get_purl()),
-            base_indent + 1,
-        ));
         if self.meta.broken.unwrap_or(false) {
             response.push(PrettyPrintLine::new("broken: true", base_indent + 1));
         }
@@ -504,6 +492,27 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
+    pub fn get_purl(&self) -> Option<String> {
+        if self.main_derivation.get_urls().len() != 0 {
+            let urls = self.main_derivation.get_urls();
+            let url = urls.get(0).unwrap();
+            if url.starts_with("https://github.com/") {
+                // let namespace = "";
+                // return Some(format!(
+                //     "pkg:github/{}/{}@{}",
+                //     namespace, self.package.name, self.package.version
+                // ));
+            }
+            return Some(format!(
+                "pkg:generic/{}@{}",
+                self.package.name, self.package.version
+            ));
+        }
+        // FIXME this should not be using the nix scope, which does not actually exist.
+        // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+        // for the accepted scopes.
+        Some(format!("pkg:nix/{}@{}", self.package.name, self.package.version))
+    }
     pub fn pretty_print(
         &self,
         graph: &PackageGraph,
@@ -512,6 +521,7 @@ impl PackageNode {
     ) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
 
+        lines.push(PrettyPrintLine::new(self.get_purl().unwrap(), base_indent));
         for line in self.package.pretty_print(base_indent, display_options) {
             lines.push(line);
         }
