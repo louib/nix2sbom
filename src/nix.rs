@@ -284,16 +284,25 @@ pub struct Meta {
 pub struct PackageURL {
     pub scheme: String,
     pub host: String,
+    pub version: Option<String>,
     pub path: Vec<String>,
     pub query_params: HashMap<String, String>,
 }
 
 impl PackageURL {
     pub fn to_string(&self) -> String {
-        let mut full_path = self.path.join("/");
+        let mut response = format!("{}://", self.scheme);
+        response += &self.host.clone();
 
-        // TODO add the query params
-        format!("{}://{}/{}", self.scheme, self.host, full_path)
+        let mut full_path = self.path.join("/");
+        if !full_path.is_empty() {
+            response += &full_path;
+        }
+
+        if let Some(version) = &self.version {
+            response += &("@".to_string() + version);
+        }
+        response
     }
 }
 
@@ -492,10 +501,25 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
-    pub fn get_purl(&self) -> Option<String> {
+    pub fn get_purl(&self) -> Option<PackageURL> {
+        let mut response: Option<PackageURL> = None;
         let mut version: Option<String> = None;
         if !self.package.version.is_empty() {
             version = Some(self.package.version.to_string());
+        }
+        let mut name: Option<String> = None;
+        if self.package.name == "source" {
+            name = match self.sources.get(0) {
+                Some(source) => source.get_name().cloned(),
+                None => None,
+            };
+            if let Some(n) = &name {
+                println!("Found package name from source: {}", &n)
+            } else {
+                name = Some(self.package.name.to_string());
+            }
+        } else {
+            name = Some(self.package.name.to_string());
         }
         if self.main_derivation.get_urls().len() != 0 {
             let urls = self.main_derivation.get_urls();
@@ -516,15 +540,20 @@ impl PackageNode {
                 //     namespace, self.package.name, self.package.version
                 // ));
             }
-            return Some(format!(
-                "pkg:generic/{}@{}",
-                self.package.name, self.package.version
-            ));
+            let mut package_url = PackageURL::default();
+            package_url.host = name.unwrap_or("".to_string());
+            package_url.version = version;
+            package_url.scheme = "generic".to_string();
+            return Some(package_url);
         }
+        let mut package_url = PackageURL::default();
+        package_url.host = name.unwrap_or("".to_string());
+        package_url.version = version;
         // FIXME this should not be using the nix scope, which does not actually exist.
         // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
         // for the accepted scopes.
-        Some(format!("pkg:nix/{}@{}", self.package.name, self.package.version))
+        package_url.scheme = "nix".to_string();
+        return Some(package_url);
     }
     pub fn pretty_print(
         &self,
@@ -534,7 +563,10 @@ impl PackageNode {
     ) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
 
-        lines.push(PrettyPrintLine::new(self.get_purl().unwrap(), base_indent));
+        lines.push(PrettyPrintLine::new(
+            self.get_purl().unwrap().to_string(),
+            base_indent,
+        ));
         for line in self.package.pretty_print(base_indent, display_options) {
             lines.push(line);
         }
