@@ -90,13 +90,21 @@ pub fn dump_package_node(
 }
 
 pub fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Component> {
-    log::debug!(
-        "Dumping sub-derivation for {}",
-        &derivation.get_name().unwrap_or(&"UNKNOWN".to_string())
-    );
+    let derivation_name = match derivation.get_name() {
+        Some(n) => n,
+        None => {
+            // TODO we should probably log something here, but I'm not sure what other value
+            // from the derivation would make sense.
+            return None;
+        }
+    };
+    log::debug!("Dumping sub-derivation for {}", &derivation_name);
+
     let mut component_builder = ComponentBuilder::default();
-    component_builder.bom_ref(derivation.get_source_path().unwrap().to_string());
-    component_builder.name(derivation.get_name().unwrap().to_string());
+    if let Some(source_path) = derivation.get_source_path() {
+        component_builder.bom_ref(source_path.to_string());
+    }
+    component_builder.name(derivation_name.to_string());
     component_builder.scope("required".to_string());
     if let Ok(component) = component_builder.build() {
         return Some(component);
