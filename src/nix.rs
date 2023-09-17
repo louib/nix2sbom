@@ -436,7 +436,7 @@ pub enum PackageMaintainers {
 #[derive(Clone)]
 #[derive(Deserialize)]
 pub struct PackageMaintainer {
-    pub email: String,
+    pub email: Option<String>,
     pub name: String,
 
     #[serde(rename = "github")]
@@ -934,5 +934,94 @@ mod tests {
         let package: Package = serde_json::from_str(package_metadata).unwrap();
         assert_eq!(package.name, "javacc-7.0.10");
         assert_eq!(package.meta.get_maintainers().len(), 1);
+    }
+
+    #[test]
+    pub fn parse_package_metadata_malformed_maintainers() {
+        const package_metadata: &str = r###"
+          {
+            "meta": {
+              "available": false,
+              "broken": false,
+              "description": "Software for rapid LiDAR processing",
+              "homepage": "http://lastools.org/",
+              "insecure": false,
+              "license": {
+                "deprecated": false,
+                "free": false,
+                "fullName": "Unfree",
+                "redistributable": false,
+                "shortName": "unfree"
+              },
+              "maintainers": [
+                {
+                  "github": "StephenWithPH",
+                  "githubId": 2990492,
+                  "name": "StephenWithPH"
+                }
+              ],
+              "name": "LAStools-2.0.2",
+              "outputsToInstall": [
+                "out"
+              ],
+              "platforms": [
+                "i686-cygwin",
+                "x86_64-cygwin",
+                "x86_64-darwin",
+                "i686-darwin",
+                "aarch64-darwin",
+                "armv7a-darwin",
+                "i686-freebsd13",
+                "x86_64-freebsd13",
+                "x86_64-solaris",
+                "aarch64-linux",
+                "armv5tel-linux",
+                "armv6l-linux",
+                "armv7a-linux",
+                "armv7l-linux",
+                "i686-linux",
+                "loongarch64-linux",
+                "m68k-linux",
+                "microblaze-linux",
+                "microblazeel-linux",
+                "mipsel-linux",
+                "mips64el-linux",
+                "powerpc64-linux",
+                "powerpc64le-linux",
+                "riscv32-linux",
+                "riscv64-linux",
+                "s390-linux",
+                "s390x-linux",
+                "x86_64-linux",
+                "aarch64-netbsd",
+                "armv6l-netbsd",
+                "armv7a-netbsd",
+                "armv7l-netbsd",
+                "i686-netbsd",
+                "m68k-netbsd",
+                "mipsel-netbsd",
+                "powerpc-netbsd",
+                "riscv32-netbsd",
+                "riscv64-netbsd",
+                "x86_64-netbsd",
+                "i686-openbsd",
+                "x86_64-openbsd",
+                "x86_64-redox"
+              ],
+              "unfree": true,
+              "unsupported": false
+            },
+            "name": "LAStools-2.0.2",
+            "outputName": "out",
+            "outputs": {
+              "out": null
+            },
+            "pname": "LAStools",
+            "system": "x86_64-linux",
+            "version": "2.0.2"
+          }
+        "###;
+        let package: Package = serde_json::from_str(package_metadata).unwrap();
+        assert_eq!(package.name, "LAStools-2.0.2");
     }
 }

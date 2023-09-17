@@ -162,7 +162,12 @@ fn get_author(package_node: &crate::nix::PackageNode) -> Option<String> {
     }
     let author = maintainers
         .iter()
-        .map(|m| format!("{} ({})", m.name, m.email))
+        .map(|m| {
+            if let Some(email) = &m.email {
+                return format!("{} ({})", m.name, email);
+            }
+            return m.name.to_string();
+        })
         .collect::<Vec<String>>()
         .join(" ");
     if author.len() != 0 {
