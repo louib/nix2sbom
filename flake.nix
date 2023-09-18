@@ -1,10 +1,5 @@
-let
-  authorName = "louib";
-  authorEmail = "code@louib.net";
-  projectName = "nix2sbom";
+rec {
   description = "`nix2sbom` extracts the SBOM (Software Bill of Materials) from a Nix derivation";
-in {
-  inherit description;
 
   inputs = {
     nixpkgs = {
@@ -23,6 +18,11 @@ in {
     flake-utils.lib.eachDefaultSystem (
       system: (
         let
+          authorName = "louib";
+          mainBranch = "main";
+          authorEmail = "code@louib.net";
+          projectName = "nix2sbom";
+
           pkgs = import nixpkgs {
             inherit system;
           };
@@ -44,7 +44,7 @@ in {
           packages = {
             default = pkgs.rustPlatform.buildRustPackage rec {
               pname = projectName;
-              version = "main";
+              version = mainBranch;
 
               src = ./.;
 
