@@ -1,4 +1,11 @@
-{
+let
+  authorName = "louib";
+  authorEmail = "code@louib.net";
+  projectName = "nix2sbom";
+  description = "`nix2sbom` extracts the SBOM (Software Bill of Materials) from a Nix derivation";
+in {
+  inherit description;
+
   inputs = {
     nixpkgs = {
       url = "github:NixOS/nixpkgs";
@@ -16,7 +23,6 @@
     flake-utils.lib.eachDefaultSystem (
       system: (
         let
-          projectName = "nix2sbom";
           pkgs = import nixpkgs {
             inherit system;
           };
@@ -47,10 +53,16 @@
               };
 
               meta = with pkgs.lib; {
-                description = "nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation";
-                homepage = "https://github.com/louib/${projectName}";
+                inherit description;
+                homepage = "https://github.com/${authorName}/${projectName}";
                 license = licenses.gpl3;
-                # maintainers = [];
+                maintainers = [
+                  {
+                    name = authorName;
+                    github = authorName;
+                    email = authorEmail;
+                  }
+                ];
               };
             };
           };
