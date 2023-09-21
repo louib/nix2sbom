@@ -3,7 +3,7 @@ use std::fs;
 use std::io::Error;
 use std::process::Command;
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 // This is a special file used By NixOS to represent the derivations
 // that were used to build the current system.
@@ -11,6 +11,7 @@ const CURRENT_SYSTEM_PATH: &str = "/run/current-system";
 
 #[derive(Debug)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[derive(Clone)]
 pub enum DerivationBuilder {
     FetchURL,
@@ -94,6 +95,7 @@ impl DerivationBuilder {
 
 #[derive(Debug)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[derive(Clone)]
 pub struct Derivation {
     pub outputs: HashMap<String, Output>,
@@ -225,6 +227,7 @@ impl Derivation {
 
 #[derive(Debug)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[derive(Clone)]
 pub struct Output {
     path: String,
@@ -275,6 +278,7 @@ pub fn get_packages(metadata_path: Option<String>) -> Result<Packages, String> {
 
 #[derive(Debug)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct Meta {
     pub packages: HashMap<String, PackageMeta>,
 }
@@ -309,6 +313,7 @@ impl PackageURL {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct Package {
     // name of the derivation
     pub name: String,
@@ -350,6 +355,7 @@ impl Package {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct PackageMeta {
     pub available: Option<bool>,
 
@@ -415,6 +421,7 @@ pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) ->
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum Homepage {
     One(String),
@@ -424,6 +431,7 @@ pub enum Homepage {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum PackageMaintainers {
     List(Vec<PackageMaintainer>),
@@ -435,6 +443,7 @@ pub enum PackageMaintainers {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct PackageMaintainer {
     pub email: Option<String>,
     pub name: String,
@@ -450,6 +459,7 @@ pub struct PackageMaintainer {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum License {
     One(PackageLicense),
@@ -459,6 +469,7 @@ pub enum License {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum PackageLicense {
     // This is used for unknown licenses, or to list only the SPDX ID.
@@ -470,6 +481,7 @@ pub enum PackageLicense {
 #[derive(Default)]
 #[derive(Clone)]
 #[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct LicenseDetails {
     pub free: Option<bool>,
     pub redistributable: Option<bool>,
@@ -488,6 +500,7 @@ pub struct LicenseDetails {
 }
 
 #[derive(Debug)]
+#[derive(Serialize)]
 pub struct PackageNode {
     pub main_derivation: Derivation,
 
@@ -503,10 +516,13 @@ pub struct PackageNode {
 impl PackageNode {
     pub fn get_purl(&self) -> Option<PackageURL> {
         let mut response: Option<PackageURL> = None;
+        let urls = self.main_derivation.get_urls();
+
         let mut version: Option<String> = None;
         if !self.package.version.is_empty() {
             version = Some(self.package.version.to_string());
         }
+
         let mut name: Option<String> = None;
         if self.package.name == "source" {
             name = match self.sources.get(0) {
@@ -514,16 +530,18 @@ impl PackageNode {
                 None => None,
             };
             if let Some(n) = &name {
-                println!("Found package name from source: {}", &n)
+                log::debug!("Found package name from source: {}", &n);
             } else {
+                log::debug!(
+                    "Could not find package name anywhere for {}",
+                    &self.to_json().unwrap()
+                );
                 name = Some(self.package.name.to_string());
             }
         } else {
             name = Some(self.package.name.to_string());
         }
-        if self.main_derivation.get_urls().len() != 0 {
-            let urls = self.main_derivation.get_urls();
-            let url = urls.get(0).unwrap();
+        if let Some(url) = urls.get(0) {
             if version.is_none() {
                 version = crate::utils::get_semver_from_archive_url(url);
             }
@@ -555,6 +573,11 @@ impl PackageNode {
         package_url.scheme = "nix".to_string();
         return Some(package_url);
     }
+
+    pub fn to_json(&self) -> Result<String, String> {
+        return serde_json::to_string_pretty(self.clone()).map_err(|e| e.to_string());
+    }
+
     pub fn pretty_print(
         &self,
         graph: &PackageGraph,
