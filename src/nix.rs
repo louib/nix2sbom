@@ -68,7 +68,7 @@ impl DerivationBuilder {
         if builder == "builtin:fetchurl" {
             return Ok(DerivationBuilder::FetchURL);
         }
-        if builder.ends_with("/bin/bash") {
+        if builder.ends_with("/bin/bash") || builder == "Bash" {
             return Ok(DerivationBuilder::Bash);
         }
         if builder.ends_with("busybox") {
