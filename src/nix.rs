@@ -1,6 +1,7 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::error::Error;
+
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fs;
-use std::io::Error;
 use std::process::Command;
 
 use serde::{Deserialize, Deserializer, Serialize};
@@ -123,23 +124,35 @@ pub type Derivations = HashMap<String, Derivation>;
 pub type Packages = HashMap<String, Package>;
 
 impl Derivation {
-    pub fn get_derivations_for_current_system() -> Result<Derivations, Error> {
+    pub fn get_derivations_for_current_system() -> Result<Derivations, Box<dyn Error>> {
         Derivation::get_derivations(CURRENT_SYSTEM_PATH)
     }
 
-    pub fn get_derivations(file_path: &str) -> Result<Derivations, Error> {
+    pub fn get_derivations(file_path: &str) -> Result<Derivations, Box<dyn Error>> {
         let output = Command::new("nix")
             .arg("show-derivation")
             .arg("-r")
             .arg(file_path)
             .output()?;
 
+        if !output.status.success() {
+            let stderr = String::from_utf8(output.stderr).unwrap();
+            return Err(format!("Could not get derivations from {}: {}", &file_path, &stderr).into());
+        }
+
         let flat_derivations: Derivations = serde_json::from_slice(&output.stdout)?;
 
         Ok(flat_derivations)
     }
 
-    pub fn build_and_get_derivations(file_path: &str, derivation_ref: &str) -> Result<Derivations, Error> {
+    pub fn to_json(&self) -> Result<String, String> {
+        return serde_json::to_string_pretty(self).map_err(|e| e.to_string());
+    }
+
+    pub fn build_and_get_derivations(
+        file_path: &str,
+        derivation_ref: &str,
+    ) -> Result<Derivations, Box<dyn Error>> {
         let derivation_path = format!("{}#{}", file_path, derivation_ref);
         let output = Command::new("nix")
             .arg("build")
@@ -510,10 +523,33 @@ pub struct PackageNode {
 
     pub patches: Vec<Derivation>,
 
-    pub children: HashSet<String>,
+    pub children: BTreeSet<String>,
 }
 
 impl PackageNode {
+    pub fn get_name(&self) -> Option<String> {
+        if self.package.name != "source" {
+            return Some(self.package.name.to_string());
+        }
+
+        for source in &self.sources {
+            if let Some(source_name) = source.get_name() {
+                return Some(source_name.to_string());
+            }
+        }
+
+        for url in self.main_derivation.get_urls() {
+            if let Some(project_name) = crate::utils::get_project_name_from_generic_url(&url) {
+                return Some(project_name.to_string());
+            }
+            if let Some(project_name) = crate::utils::get_project_name_from_archive_url(&url) {
+                return Some(project_name.to_string());
+            }
+        }
+
+        return None;
+    }
+
     pub fn get_purl(&self) -> Option<PackageURL> {
         let mut response: Option<PackageURL> = None;
         let urls = self.main_derivation.get_urls();
@@ -523,27 +559,23 @@ impl PackageNode {
             version = Some(self.package.version.to_string());
         }
 
-        let mut name: Option<String> = None;
-        if self.package.name == "source" {
-            name = match self.sources.get(0) {
-                Some(source) => source.get_name().cloned(),
-                None => None,
-            };
-            if let Some(n) = &name {
-                log::debug!("Found package name from source: {}", &n);
-            } else {
-                log::debug!(
-                    "Could not find package name anywhere for {}",
-                    &self.to_json().unwrap()
-                );
-                name = Some(self.package.name.to_string());
-            }
+        let mut name: Option<String> = self.get_name();
+        if let Some(n) = &name {
+            log::debug!("Found package name from source: {}", &n);
         } else {
+            log::debug!(
+                "Could not find package name anywhere for {}",
+                &self.to_json().unwrap()
+            );
             name = Some(self.package.name.to_string());
         }
+
         if let Some(url) = urls.get(0) {
             if version.is_none() {
                 version = crate::utils::get_semver_from_archive_url(url);
+            }
+            if version.is_none() {
+                version = self.main_derivation.env.get("rev").cloned();
             }
             if url.starts_with("https://crates.io") {}
             if url.starts_with("https://bitbucket.org") {}
@@ -638,7 +670,7 @@ impl PackageNode {
     }
 }
 
-pub type PackageGraph = HashMap<String, PackageNode>;
+pub type PackageGraph = BTreeMap<String, PackageNode>;
 
 fn add_visited_children(
     package_node: &PackageNode,
@@ -735,7 +767,7 @@ pub fn get_package_graph(
         let mut current_node = PackageNode {
             package: package.clone(),
             main_derivation: derivation.clone(),
-            children: HashSet::default(),
+            children: BTreeSet::default(),
             sources: vec![],
             patches: vec![],
         };
@@ -750,6 +782,7 @@ pub fn get_package_graph(
 
         while child_derivation_paths.len() != 0 {
             let child_derivation_path = child_derivation_paths.pop_last().unwrap();
+            log::debug!("Visiting {}", &child_derivation_path);
             if visited_derivations.contains(&child_derivation_path) {
                 continue;
             }

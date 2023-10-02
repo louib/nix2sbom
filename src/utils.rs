@@ -6,6 +6,11 @@ lazy_static! {
 }
 
 lazy_static! {
+    static ref PROJECT_NAME_AND_SEMVER_REGEX: Regex =
+        Regex::new(r"([0-9a-zA-Z_-]+)-([0-9]+.[0-9]+.[0-9]+)(-[0-9a-zA-Z_]+)?").unwrap();
+}
+
+lazy_static! {
     static ref GIT_PROJECT_URL_REGEX: Regex = Regex::new(r"https?://([0-9a-zA-Z/._-]+)\.git").unwrap();
 }
 
@@ -75,6 +80,28 @@ pub fn get_git_url_from_generic_url(generic_url: &str) -> Option<String> {
     // The SourceForge git access is documented here
     // https://sourceforge.net/p/forge/documentation/Git/#anonymous-access-read-only
     None
+}
+
+pub fn get_project_name_from_generic_url(generic_url: &str) -> Option<String> {
+    let captured_groups = match GITHUB_PROJECT_REGEX.captures(generic_url) {
+        Some(g) => g,
+        None => return None,
+    };
+    if captured_groups.len() != 0 {
+        let project_name: String = captured_groups[2].to_string();
+        return Some(project_name);
+    }
+
+    let captured_groups = match GITLAB_PROJECT_REGEX.captures(generic_url) {
+        Some(g) => g,
+        None => return None,
+    };
+    if captured_groups.len() != 0 {
+        let project_name: String = captured_groups[2].to_string();
+        return Some(project_name);
+    }
+
+    return None;
 }
 
 pub fn get_github_url_from_generic_url(generic_url: &str) -> Option<String> {
@@ -200,6 +227,18 @@ pub fn get_semver_from_archive_url(archive_url: &str) -> Option<String> {
     return Some(captured_groups[1].to_string());
 }
 
+pub fn get_project_name_from_archive_url(archive_url: &str) -> Option<String> {
+    let archive_filename = archive_url.split("/").last().unwrap();
+    let captured_groups = match PROJECT_NAME_AND_SEMVER_REGEX.captures(archive_filename) {
+        Some(g) => g,
+        None => return None,
+    };
+    if captured_groups.len() == 0 {
+        return None;
+    }
+    return Some(captured_groups[1].to_string());
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,6 +322,7 @@ mod tests {
             "https://bitbucket.org/Doomseeker/doomseeker.git"
         );
     }
+
     #[test]
     pub fn test_get_semver_from_archive() {
         let version = crate::utils::get_semver_from_archive_url(
@@ -319,5 +359,18 @@ mod tests {
             crate::utils::get_semver_from_archive_url("https://github.com/sass/libsass/archive/3.6.4.tar.gz");
         assert!(version.is_some());
         assert_eq!(version.unwrap(), "3.6.4");
+    }
+
+    #[test]
+    pub fn test_get_project_name_from_archive() {
+        let project_name = crate::utils::get_project_name_from_archive_url(
+            "https://download.gnome.org/core/3.28/3.28.2/sources/libgsf-1.14.43.tar.xz",
+        );
+        assert!(project_name.is_some());
+        assert_eq!(project_name.unwrap(), "libgsf");
+
+        // TODO I should also be able to extract the name from an archive url with partial
+        // semver, for example from this one:
+        // http://www.leonerd.org.uk/code/libtermkey/libtermkey-0.22.tar.gz
     }
 }

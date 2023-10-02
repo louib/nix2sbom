@@ -50,22 +50,6 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     logger::init();
     let args = NixToSBOM::parse();
 
-    let mut derivations: crate::nix::Derivations = crate::nix::Derivations::default();
-    if let Some(file_path) = args.file_path {
-        log::info!("Getting the derivations from file {}.", &file_path);
-        derivations = nix::Derivation::get_derivations(&file_path)?;
-    } else if args.current_system {
-        log::info!("Getting the derivations from the current system.");
-        derivations = nix::Derivation::get_derivations_for_current_system()?;
-    } else {
-        eprintln!("Error: Must provide a file or use the --curent-system argument.");
-        return Ok(std::process::ExitCode::FAILURE);
-    }
-    log::info!("Found {} derivations", derivations.len());
-
-    let packages = crate::nix::get_packages(args.metadata_path)?;
-    log::debug!("Found {} packages in the Nix store", packages.len());
-
     let output_format = match args.format {
         Some(f) => match crate::sbom::Format::from_string(&f) {
             Some(f) => f,
@@ -87,6 +71,22 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         },
         None => output_format.get_default_serialization_format(),
     };
+
+    let mut derivations: crate::nix::Derivations = crate::nix::Derivations::default();
+    if let Some(file_path) = args.file_path {
+        log::info!("Getting the derivations from {}", &file_path);
+        derivations = nix::Derivation::get_derivations(&file_path)?;
+    } else if args.current_system {
+        log::info!("Getting the derivations from the current system");
+        derivations = nix::Derivation::get_derivations_for_current_system()?;
+    } else {
+        eprintln!("Error: Must provide a file or use the --curent-system argument");
+        return Ok(std::process::ExitCode::FAILURE);
+    }
+    log::info!("Found {} derivations", derivations.len());
+
+    let packages = crate::nix::get_packages(args.metadata_path)?;
+    log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");
     let package_graph = crate::nix::get_package_graph(&derivations, &packages);
