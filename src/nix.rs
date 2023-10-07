@@ -577,9 +577,6 @@ impl PackageNode {
     }
 
     pub fn get_purl(&self) -> Option<PackageURL> {
-        let mut response: Option<PackageURL> = None;
-        let urls = self.main_derivation.get_urls();
-
         let mut name: Option<String> = self.get_name();
         if let Some(n) = &name {
             log::debug!("Found package name from source: {}", &n);

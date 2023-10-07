@@ -391,5 +391,17 @@ mod tests {
         );
         assert!(project_name.is_some());
         assert_eq!(project_name.unwrap(), "str-buf");
+
+        let project_name = crate::utils::get_project_name_from_archive_url(
+            "https://crates.io/api/v1/crates/proc-macro2/1.0.63/download",
+        );
+        assert!(project_name.is_some());
+        assert_eq!(project_name.unwrap(), "proc-macro2");
+
+        let project_name = crate::utils::get_project_name_from_archive_url(
+            "https://crates.io/api/v1/crates/clap_lex/0.5.0/download",
+        );
+        assert!(project_name.is_some());
+        assert_eq!(project_name.unwrap(), "clap_lex");
     }
 }
