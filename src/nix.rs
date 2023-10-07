@@ -550,14 +550,26 @@ impl PackageNode {
         return None;
     }
 
+    pub fn get_version(&self) -> Option<String> {
+        if !self.package.version.is_empty() {
+            return Some(self.package.version.to_string());
+        }
+
+        for url in self.main_derivation.get_urls() {
+            if let Some(version) = crate::utils::get_semver_from_archive_url(&url) {
+                return Some(version);
+            }
+            if let Some(commit_sha) = self.main_derivation.env.get("rev").cloned() {
+                return Some(commit_sha);
+            }
+        }
+
+        return None;
+    }
+
     pub fn get_purl(&self) -> Option<PackageURL> {
         let mut response: Option<PackageURL> = None;
         let urls = self.main_derivation.get_urls();
-
-        let mut version: Option<String> = None;
-        if !self.package.version.is_empty() {
-            version = Some(self.package.version.to_string());
-        }
 
         let mut name: Option<String> = self.get_name();
         if let Some(n) = &name {
@@ -570,39 +582,28 @@ impl PackageNode {
             name = Some(self.package.name.to_string());
         }
 
-        if let Some(url) = urls.get(0) {
-            if version.is_none() {
-                version = crate::utils::get_semver_from_archive_url(url);
-            }
-            if version.is_none() {
-                version = self.main_derivation.env.get("rev").cloned();
-            }
-            if url.starts_with("https://crates.io") {}
-            if url.starts_with("https://bitbucket.org") {}
-            if url.starts_with("https://registry.npmjs.org") {}
-            if url.starts_with("https://pypi.python.org") {}
-            // TODO gitlab ??
-            // TODO openwrt ??
-            if url.starts_with("https://github.com") {
-                // let namespace = "";
-                // return Some(format!(
-                //     "pkg:github/{}/{}@{}",
-                //     namespace, self.package.name, self.package.version
-                // ));
-            }
-            let mut package_url = PackageURL::default();
-            package_url.host = name.unwrap_or("".to_string());
-            package_url.version = version;
-            package_url.scheme = "generic".to_string();
-            return Some(package_url);
+        let mut version: Option<String> = self.get_name();
+        if let Some(v) = &version {
+            log::debug!("Found package version: {}", &v);
         }
+
+        // FIXME this cannot use the nix scope, which does not actually exist.
+        // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+        // for the accepted scopes.
+        let scheme = "generic";
+        // TODO detect the scheme using the url.
+        // if url.starts_with("https://crates.io") {}
+        // if url.starts_with("https://bitbucket.org") {}
+        // if url.starts_with("https://registry.npmjs.org") {}
+        // if url.starts_with("https://pypi.python.org") {}
+        // if url.starts_with("https://github.com") {}
+        // TODO gitlab ??
+        // TODO openwrt ??
+
         let mut package_url = PackageURL::default();
         package_url.host = name.unwrap_or("".to_string());
         package_url.version = version;
-        // FIXME this should not be using the nix scope, which does not actually exist.
-        // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
-        // for the accepted scopes.
-        package_url.scheme = "nix".to_string();
+        package_url.scheme = scheme.to_string();
         return Some(package_url);
     }
 
@@ -704,6 +705,9 @@ pub fn pretty_print_package_graph(
 
     let mut visited_children: HashSet<String> = HashSet::default();
     for (derivation_path, package_node) in package_graph {
+        if visited_children.contains(derivation_path) {
+            continue;
+        }
         for child_derivation_path in &package_node.children {
             let child = package_graph.get(child_derivation_path).unwrap().clone();
             add_visited_children(child, &package_graph, &mut visited_children);
