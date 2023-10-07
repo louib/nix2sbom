@@ -117,7 +117,7 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     let mut component_builder = ComponentBuilder::default();
 
     component_builder.bom_ref(derivation_path.to_string());
-    component_builder.name(package_node.package.name.to_string());
+    component_builder.name(package_node.get_name().unwrap());
     // component_builder.cpe("TODO".to_string())
     // TODO application is the generic type, but we should also use file and library
     // also, populate the mime_type in case of a file type.
@@ -125,10 +125,14 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     // I'm assuming here that if a package has been installed by Nix, it was required.
     component_builder.scope("required".to_string());
     component_builder.purl(package_node.get_purl().unwrap().to_string());
-    component_builder.version(package_node.package.version.to_string());
+    if let Some(v) = package_node.get_version() {
+        component_builder.version(v.to_string());
+    }
 
-    if let Some(description) = &package_node.package.meta.description {
-        component_builder.description(description.to_string());
+    if let Some(p) = &package_node.package {
+        if let Some(description) = &p.meta.description {
+            component_builder.description(description.to_string());
+        }
     }
 
     if let Some(author) = get_author(&package_node) {
@@ -147,7 +151,7 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
         component_builder.pedigree(pedigree_builder.build().unwrap());
     }
 
-    let licenses = get_licenses(&package_node.package.meta.get_licenses());
+    let licenses = get_licenses(&package_node);
     if licenses.len() != 0 {
         component_builder.licenses(licenses);
     }
@@ -156,7 +160,10 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
 }
 
 fn get_author(package_node: &crate::nix::PackageNode) -> Option<String> {
-    let maintainers = package_node.package.meta.get_maintainers();
+    let maintainers = match &package_node.package {
+        Some(p) => p.meta.get_maintainers(),
+        None => vec![],
+    };
     if maintainers.len() == 0 {
         return None;
     }
@@ -192,7 +199,11 @@ fn get_commits(patches: &Vec<crate::nix::Derivation>) -> Vec<Commit> {
 
 fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<ExternalReference> {
     let mut external_references: Vec<ExternalReference> = vec![];
-    for homepage in package_node.package.meta.get_homepages() {
+    let homepages = match &package_node.package {
+        Some(p) => p.meta.get_homepages(),
+        None => vec![],
+    };
+    for homepage in homepages {
         let mut external_reference_builder = ExternalReferenceBuilder::default();
         // See https://docs.rs/serde-cyclonedx/latest/serde_cyclonedx/cyclonedx/v_1_5/struct.ExternalReference.html#structfield.type_
         // for all the available external reference types
@@ -216,8 +227,12 @@ fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<Extern
     external_references
 }
 
-fn get_licenses(licenses: &Vec<crate::nix::PackageLicense>) -> Vec<LicenseChoice> {
+fn get_licenses(package_node: &crate::nix::PackageNode) -> Vec<LicenseChoice> {
     let mut response: Vec<LicenseChoice> = vec![];
+    let licenses = match &package_node.package {
+        Some(p) => p.meta.get_licenses(),
+        None => vec![],
+    };
     for license in licenses {
         match license {
             crate::nix::PackageLicense::Name(n) => {

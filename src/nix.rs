@@ -517,7 +517,7 @@ pub struct LicenseDetails {
 pub struct PackageNode {
     pub main_derivation: Derivation,
 
-    pub package: Package,
+    pub package: Option<Package>,
 
     pub sources: Vec<Derivation>,
 
@@ -528,8 +528,10 @@ pub struct PackageNode {
 
 impl PackageNode {
     pub fn get_name(&self) -> Option<String> {
-        if self.package.name != "source" {
-            return Some(self.package.name.to_string());
+        if let Some(p) = &self.package {
+            if p.name != "source" {
+                return Some(p.name.to_string());
+            }
         }
 
         for source in &self.sources {
@@ -551,8 +553,10 @@ impl PackageNode {
     }
 
     pub fn get_version(&self) -> Option<String> {
-        if !self.package.version.is_empty() {
-            return Some(self.package.version.to_string());
+        if let Some(p) = &self.package {
+            if !p.version.is_empty() {
+                return Some(p.version.to_string());
+            }
         }
 
         for url in self.main_derivation.get_urls() {
@@ -579,7 +583,7 @@ impl PackageNode {
                 "Could not find package name anywhere for {}",
                 &self.to_json().unwrap()
             );
-            name = Some(self.package.name.to_string());
+            name = Some("unknown".to_string());
         }
 
         let mut version: Option<String> = self.get_name();
@@ -623,8 +627,10 @@ impl PackageNode {
             self.get_purl().unwrap().to_string(),
             base_indent,
         ));
-        for line in self.package.pretty_print(base_indent, display_options) {
-            lines.push(line);
+        if let Some(p) = &self.package {
+            for line in p.pretty_print(base_indent, display_options) {
+                lines.push(line);
+            }
         }
         for line in self.main_derivation.pretty_print(base_indent, display_options) {
             lines.push(line);
@@ -769,7 +775,7 @@ pub fn get_package_graph(
             None => continue,
         };
         let mut current_node = PackageNode {
-            package: package.clone(),
+            package: Some(package.clone()),
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
             sources: vec![],
