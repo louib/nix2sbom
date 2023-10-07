@@ -15,6 +15,11 @@ lazy_static! {
 }
 
 lazy_static! {
+    static ref CRATE_DOWNLOAD_URL_REGEX: Regex =
+        Regex::new(r"https?://crates.io/api/v1/crates/([0-9a-zA-Z_-]+)/([0-9]+.[0-9]+.[0-9]+)").unwrap();
+}
+
+lazy_static! {
     static ref GITHUB_PROJECT_REGEX: Regex =
         Regex::new(r"https?://github.com/([0-9a-zA-Z_-]+)/([0-9a-zA-Z_-]+)").unwrap();
 }
@@ -229,14 +234,21 @@ pub fn get_semver_from_archive_url(archive_url: &str) -> Option<String> {
 
 pub fn get_project_name_from_archive_url(archive_url: &str) -> Option<String> {
     let archive_filename = archive_url.split("/").last().unwrap();
-    let captured_groups = match PROJECT_NAME_AND_SEMVER_REGEX.captures(archive_filename) {
+    if let Some(g) = PROJECT_NAME_AND_SEMVER_REGEX.captures(archive_filename) {
+        if g.len() != 0 {
+            return Some(g[1].to_string());
+        }
+    }
+
+    let captured_groups = match CRATE_DOWNLOAD_URL_REGEX.captures(archive_url) {
         Some(g) => g,
         None => return None,
     };
-    if captured_groups.len() == 0 {
-        return None;
+    if captured_groups.len() != 0 {
+        return Some(captured_groups[1].to_string());
     }
-    return Some(captured_groups[1].to_string());
+
+    return None;
 }
 
 #[cfg(test)]
@@ -372,5 +384,12 @@ mod tests {
         // TODO I should also be able to extract the name from an archive url with partial
         // semver, for example from this one:
         // http://www.leonerd.org.uk/code/libtermkey/libtermkey-0.22.tar.gz
+        //
+
+        let project_name = crate::utils::get_project_name_from_archive_url(
+            "https://crates.io/api/v1/crates/str-buf/1.0.6/download",
+        );
+        assert!(project_name.is_some());
+        assert_eq!(project_name.unwrap(), "str-buf");
     }
 }

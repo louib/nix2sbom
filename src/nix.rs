@@ -35,26 +35,31 @@ pub fn is_stdenv(name: &str) -> bool {
         // TODO probably other stdenv- derivatives to add
         // to this list
         "acl",
-        "db",
-        "attr",
-        "patch",
-        "bzip2",
-        "patchelf",
-        "pkg-config",
-        "gnum4",
-        // "isl", ????
-        // "gmp-with-cxx", ????
-        "automake",
         "autoconf",
-        "libtool",
-        "libffi",
-        "zlib",
+        "automake",
+        "attr",
+        "binutils",
         "bison",
-        "which",
+        "bzip2",
+        "db",
         // "expat", ????
-        "unzip",
         "findutils",
         "flex",
+        "gnum4",
+        "gettext",
+        // gcc???
+        // "gmp-with-cxx", ????
+        // "isl", ????
+        "perl",
+        "patch",
+        "patchelf",
+        "pkg-config",
+        "texinfo",
+        "libtool",
+        "libffi",
+        "unzip",
+        "zlib",
+        "which",
     ];
     for stdenv_name in stdenv_names {
         if name.starts_with(stdenv_name) {
@@ -771,11 +776,11 @@ pub fn get_package_graph(
             }
         };
         let package = match packages.get(derivation_name) {
-            Some(p) => p,
-            None => continue,
+            Some(p) => Some(p.clone()),
+            None => None,
         };
         let mut current_node = PackageNode {
-            package: Some(package.clone()),
+            package,
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
             sources: vec![],
