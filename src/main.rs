@@ -11,6 +11,7 @@ use clap::Parser;
 
 mod consts;
 mod cyclone_dx;
+mod errors;
 mod logger;
 mod nix;
 mod sbom;
@@ -93,37 +94,16 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     log::info!("{} nodes in the package graph", package_graph.len());
 
     log::info!("Creating the SBOM");
-    match output_format {
-        crate::sbom::Format::CycloneDX => {
-            let output = crate::cyclone_dx::dump(&package_graph, &serialization_format);
-            match output {
-                Ok(o) => {
-                    println!("{}", &o);
-                }
-                Err(e) => {
-                    eprintln!("{}", e.to_string());
-                    return Ok(std::process::ExitCode::FAILURE);
-                }
-            };
-        }
-        crate::sbom::Format::SPDX => {
-            eprintln!(
-                "{} is not supported yet.",
-                crate::sbom::Format::SPDX.to_pretty_name()
-            );
+
+    let sbom_dump = match output_format.dump(&serialization_format, &package_graph) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("{}", e.to_string());
             return Ok(std::process::ExitCode::FAILURE);
         }
-        crate::sbom::Format::PrettyPrint => {
-            let display_options = crate::nix::DisplayOptions {
-                print_stdenv: false,
-                print_exclude_list: vec![],
-            };
-            println!(
-                "{}",
-                crate::nix::pretty_print_package_graph(&package_graph, 0, &display_options,)
-            );
-        }
     };
+
+    println!("{}", sbom_dump);
 
     Ok(std::process::ExitCode::SUCCESS)
 }

@@ -38,6 +38,36 @@ impl Format {
             crate::sbom::Format::PrettyPrint => crate::sbom::SerializationFormat::XML,
         }
     }
+
+    pub fn dump(
+        &self,
+        serialization_format: &SerializationFormat,
+        package_graph: &crate::nix::PackageGraph,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        match self {
+            crate::sbom::Format::CycloneDX => {
+                return match crate::cyclone_dx::dump(&package_graph, &serialization_format) {
+                    Ok(d) => Ok(d),
+                    Err(s) => Err(Box::new(crate::errors::Error::UnknownError(s))),
+                };
+            }
+            crate::sbom::Format::SPDX => Err(Box::new(crate::errors::Error::UnsupportedFormat(
+                "spdx".to_string(),
+            ))),
+            crate::sbom::Format::PrettyPrint => {
+                let display_options = crate::nix::DisplayOptions {
+                    print_stdenv: false,
+                    print_exclude_list: vec![],
+                };
+
+                return Ok(crate::nix::pretty_print_package_graph(
+                    &package_graph,
+                    0,
+                    &display_options,
+                ));
+            }
+        }
+    }
 }
 
 impl Default for Format {
