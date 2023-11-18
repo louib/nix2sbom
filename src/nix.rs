@@ -27,6 +27,7 @@ pub enum DerivationBuilder {
 pub struct DisplayOptions {
     pub print_stdenv: bool,
     pub print_exclude_list: Vec<String>,
+    pub print_only_purl: bool,
 }
 
 pub fn is_stdenv(name: &str) -> bool {
@@ -136,6 +137,8 @@ impl Derivation {
     pub fn get_derivations(file_path: &str) -> Result<Derivations, Box<dyn Error>> {
         let output = Command::new("nix")
             .arg("show-derivation")
+            // FIXME we might want to disable impure by default.
+            .arg("--impure")
             .arg("-r")
             .arg(file_path)
             .output()?;
@@ -161,6 +164,8 @@ impl Derivation {
         let derivation_path = format!("{}#{}", file_path, derivation_ref);
         let output = Command::new("nix")
             .arg("build")
+            // FIXME we might want to disable impure by default.
+            .arg("--impure")
             .arg("--show-out-paths")
             .arg(derivation_path)
             .output()?;
@@ -534,6 +539,9 @@ pub struct PackageNode {
 impl PackageNode {
     pub fn get_name(&self) -> Option<String> {
         if let Some(p) = &self.package {
+            if p.pname != "source" {
+                return Some(p.pname.to_string());
+            }
             if p.name != "source" {
                 return Some(p.name.to_string());
             }
@@ -588,7 +596,7 @@ impl PackageNode {
             name = Some("unknown".to_string());
         }
 
-        let mut version: Option<String> = self.get_name();
+        let mut version: Option<String> = self.get_version();
         if let Some(v) = &version {
             log::debug!("Found package version: {}", &v);
         }
@@ -629,30 +637,34 @@ impl PackageNode {
             self.get_purl().unwrap().to_string(),
             base_indent,
         ));
-        if let Some(p) = &self.package {
-            for line in p.pretty_print(base_indent, display_options) {
+
+        if !display_options.print_only_purl {
+            if let Some(p) = &self.package {
+                for line in p.pretty_print(base_indent, display_options) {
+                    lines.push(line);
+                }
+            }
+            for line in self.main_derivation.pretty_print(base_indent, display_options) {
                 lines.push(line);
             }
-        }
-        for line in self.main_derivation.pretty_print(base_indent, display_options) {
-            lines.push(line);
-        }
-        if self.sources.len() != 0 {
-            lines.push(PrettyPrintLine::new("sources:", base_indent + 1));
-            for source in &self.sources {
-                for line in source.pretty_print(base_indent + 1, display_options) {
-                    lines.push(line);
+            if self.sources.len() != 0 {
+                lines.push(PrettyPrintLine::new("sources:", base_indent + 1));
+                for source in &self.sources {
+                    for line in source.pretty_print(base_indent + 1, display_options) {
+                        lines.push(line);
+                    }
+                }
+            }
+            if self.patches.len() != 0 {
+                lines.push(PrettyPrintLine::new("patches:", base_indent + 1));
+                for patch in &self.patches {
+                    for line in patch.pretty_print(base_indent + 1, display_options) {
+                        lines.push(line);
+                    }
                 }
             }
         }
-        if self.patches.len() != 0 {
-            lines.push(PrettyPrintLine::new("patches:", base_indent + 1));
-            for patch in &self.patches {
-                for line in patch.pretty_print(base_indent + 1, display_options) {
-                    lines.push(line);
-                }
-            }
-        }
+
         if self.children.len() != 0 {
             for child_package_derivation_path in self.children.iter() {
                 let child_package = match graph.get(child_package_derivation_path) {
@@ -687,6 +699,9 @@ fn add_visited_children(
     visited_children: &mut HashSet<String>,
 ) {
     for child_derivation_path in &package_node.children {
+        if visited_children.contains(child_derivation_path) {
+            continue;
+        }
         visited_children.insert(child_derivation_path.to_string());
         let child_package = match package_graph.get(child_derivation_path) {
             Some(p) => p,

@@ -117,7 +117,11 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     let mut component_builder = ComponentBuilder::default();
 
     component_builder.bom_ref(derivation_path.to_string());
-    component_builder.name(package_node.get_name().unwrap());
+    if let Some(name) = package_node.get_name() {
+        component_builder.name(name.to_string());
+    } else {
+        return None;
+    }
     // component_builder.cpe("TODO".to_string())
     // TODO application is the generic type, but we should also use file and library
     // also, populate the mime_type in case of a file type.

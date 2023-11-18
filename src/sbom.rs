@@ -57,6 +57,7 @@ impl Format {
             crate::sbom::Format::PrettyPrint => {
                 let display_options = crate::nix::DisplayOptions {
                     print_stdenv: false,
+                    print_only_purl: true,
                     print_exclude_list: vec![],
                 };
 
