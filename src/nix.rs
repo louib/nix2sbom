@@ -247,6 +247,33 @@ impl Derivation {
         response.push(PrettyPrintLine::new("unknown derivation?", depth + 1));
         response
     }
+
+    pub fn get_version(&self) -> Option<String> {
+        let pname = match self.env.get("pname") {
+            Some(n) => n,
+            None => return None,
+        };
+        let name = match self.env.get("name") {
+            Some(n) => n,
+            None => return None,
+        };
+        if name.contains(pname) {
+            let package_name_prefix = pname.to_string() + "-";
+            return Some(name.replace(&package_name_prefix, ""));
+        }
+        for url in self.get_urls() {
+            if let Some(commit_sha) = crate::utils::get_git_sha_from_archive_url(&url) {
+                return Some(commit_sha);
+            }
+            if let Some(version) = crate::utils::get_semver_from_archive_url(&url) {
+                return Some(version);
+            }
+        }
+        if let Some(commit_sha) = self.env.get("rev").cloned() {
+            return Some(commit_sha);
+        }
+        None
+    }
 }
 
 #[derive(Debug)]
@@ -550,7 +577,15 @@ impl PackageNode {
 
         for source in &self.sources {
             if let Some(source_name) = source.get_name() {
-                return Some(source_name.to_string());
+                if source_name != "source" {
+                    return Some(source_name.to_string());
+                }
+            }
+        }
+
+        if let Some(name) = self.main_derivation.get_name() {
+            if name != "source" {
+                return Some(name.to_string());
             }
         }
 
@@ -573,19 +608,10 @@ impl PackageNode {
             }
         }
 
-        for url in self.main_derivation.get_urls() {
-            if let Some(version) = crate::utils::get_semver_from_archive_url(&url) {
-                return Some(version);
-            }
-            if let Some(commit_sha) = self.main_derivation.env.get("rev").cloned() {
-                return Some(commit_sha);
-            }
-        }
-
         return None;
     }
 
-    pub fn get_purl(&self) -> Option<PackageURL> {
+    pub fn get_purl(&self) -> PackageURL {
         let mut name: Option<String> = self.get_name();
         if let Some(n) = &name {
             log::debug!("Found package name from source: {}", &n);
@@ -597,9 +623,20 @@ impl PackageNode {
             name = Some("unknown".to_string());
         }
 
+        if name == Some("source".to_string()) {
+            log::trace!("{}", self.to_json().unwrap());
+        }
+        // FIXME not sure what to do with these yet.
+        if name == Some("raw".to_string()) {
+            log::trace!("{}", self.to_json().unwrap());
+        }
+
         let mut version: Option<String> = self.get_version();
-        if let Some(v) = &version {
-            log::debug!("Found package version: {}", &v);
+        if version.is_none() {
+            version = self.main_derivation.get_version();
+        }
+        if version.is_none() {
+            log::trace!("{}", self.to_json().unwrap());
         }
 
         // FIXME this cannot use the nix scope, which does not actually exist.
@@ -608,6 +645,7 @@ impl PackageNode {
         let scheme = "generic";
         // TODO detect the scheme using the url.
         // if url.starts_with("https://crates.io") {}
+        // https://crates.io/api/v1/crates/project-name/1.0.2/download
         // if url.starts_with("https://bitbucket.org") {}
         // if url.starts_with("https://registry.npmjs.org") {}
         // if url.starts_with("https://pypi.python.org") {}
@@ -619,7 +657,7 @@ impl PackageNode {
         package_url.host = name.unwrap_or("".to_string());
         package_url.version = version;
         package_url.scheme = scheme.to_string();
-        return Some(package_url);
+        return package_url;
     }
 
     pub fn to_json(&self) -> Result<String, String> {
@@ -638,7 +676,7 @@ impl PackageNode {
             return lines;
         }
 
-        lines.push(PrettyPrintLine::new(self.get_purl().unwrap().to_string(), depth));
+        lines.push(PrettyPrintLine::new(self.get_purl().to_string(), depth));
 
         if !display_options.print_only_purl {
             if let Some(p) = &self.package {

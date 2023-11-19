@@ -128,7 +128,7 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
     component_builder.type_("application".to_string());
     // I'm assuming here that if a package has been installed by Nix, it was required.
     component_builder.scope("required".to_string());
-    component_builder.purl(package_node.get_purl().unwrap().to_string());
+    component_builder.purl(package_node.get_purl().to_string());
     if let Some(v) = package_node.get_version() {
         component_builder.version(v.to_string());
     }

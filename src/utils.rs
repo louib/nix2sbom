@@ -6,6 +6,10 @@ lazy_static! {
 }
 
 lazy_static! {
+    static ref GIT_SHA_REGEX: Regex = Regex::new(r"([0-9a-fA-F]{40})").unwrap();
+}
+
+lazy_static! {
     static ref PROJECT_NAME_AND_SEMVER_REGEX: Regex =
         Regex::new(r"([0-9a-zA-Z_-]+)-([0-9]+.[0-9]+.[0-9]+)(-[0-9a-zA-Z_]+)?").unwrap();
 }
@@ -232,6 +236,17 @@ pub fn get_semver_from_archive_url(archive_url: &str) -> Option<String> {
     return Some(captured_groups[1].to_string());
 }
 
+pub fn get_git_sha_from_archive_url(archive_url: &str) -> Option<String> {
+    let captured_groups = match GIT_SHA_REGEX.captures(archive_url) {
+        Some(g) => g,
+        None => return None,
+    };
+    if captured_groups.len() == 0 {
+        return None;
+    }
+    return Some(captured_groups[0].to_string());
+}
+
 pub fn get_project_name_from_archive_url(archive_url: &str) -> Option<String> {
     let archive_filename = archive_url.split("/").last().unwrap();
     if let Some(g) = PROJECT_NAME_AND_SEMVER_REGEX.captures(archive_filename) {
@@ -333,6 +348,15 @@ mod tests {
             git_url.unwrap(),
             "https://bitbucket.org/Doomseeker/doomseeker.git"
         );
+    }
+
+    #[test]
+    pub fn test_get_git_sha_from_archive() {
+        let sha = crate::utils::get_git_sha_from_archive_url(
+            "https://raw.githubusercontent.com/NixOS/nixos-artwork/766f10e0c93cb1236a85925a089d861b52ed2905/wallpapers/nix-wallpaper-simple-blue.png"
+        );
+        assert!(sha.is_some());
+        assert_eq!(sha.unwrap(), "766f10e0c93cb1236a85925a089d861b52ed2905");
     }
 
     #[test]
