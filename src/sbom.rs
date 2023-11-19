@@ -59,6 +59,7 @@ impl Format {
                     print_stdenv: false,
                     print_only_purl: true,
                     print_exclude_list: vec![],
+                    max_depth: Some(1),
                 };
 
                 return Ok(crate::nix::pretty_print_package_graph(

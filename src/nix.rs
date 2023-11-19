@@ -28,6 +28,7 @@ pub struct DisplayOptions {
     pub print_stdenv: bool,
     pub print_exclude_list: Vec<String>,
     pub print_only_purl: bool,
+    pub max_depth: Option<usize>,
 }
 
 pub fn is_stdenv(name: &str) -> bool {
@@ -233,17 +234,17 @@ impl Derivation {
         vec![]
     }
 
-    pub fn pretty_print(&self, base_indent: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, depth: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         for url in self.get_urls() {
-            response.push(PrettyPrintLine::new(url, base_indent + 1));
+            response.push(PrettyPrintLine::new(url, depth + 1));
             return response;
         }
         if let Some(name) = self.get_name() {
-            response.push(PrettyPrintLine::new(name, base_indent + 1));
+            response.push(PrettyPrintLine::new(name, depth + 1));
             return response;
         }
-        response.push(PrettyPrintLine::new("unknown derivation?", base_indent + 1));
+        response.push(PrettyPrintLine::new("unknown derivation?", depth + 1));
         response
     }
 }
@@ -357,19 +358,19 @@ pub struct Package {
     pub meta: PackageMeta,
 }
 impl Package {
-    pub fn pretty_print(&self, base_indent: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, depth: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         if self.meta.broken.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("broken: true", base_indent + 1));
+            response.push(PrettyPrintLine::new("broken: true", depth + 1));
         }
         if self.meta.insecure.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("insecure: true", base_indent + 1));
+            response.push(PrettyPrintLine::new("insecure: true", depth + 1));
         }
         if self.meta.unfree.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("unfree: true", base_indent + 1));
+            response.push(PrettyPrintLine::new("unfree: true", depth + 1));
         }
         if self.meta.unsupported.unwrap_or(false) {
-            response.push(PrettyPrintLine::new("unsupported: true", base_indent + 1));
+            response.push(PrettyPrintLine::new("unsupported: true", depth + 1));
         }
         response
     }
@@ -628,37 +629,38 @@ impl PackageNode {
     pub fn pretty_print(
         &self,
         graph: &PackageGraph,
-        base_indent: usize,
+        depth: usize,
         display_options: &DisplayOptions,
     ) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
 
-        lines.push(PrettyPrintLine::new(
-            self.get_purl().unwrap().to_string(),
-            base_indent,
-        ));
+        if depth >= display_options.max_depth.unwrap_or(std::usize::MAX) {
+            return lines;
+        }
+
+        lines.push(PrettyPrintLine::new(self.get_purl().unwrap().to_string(), depth));
 
         if !display_options.print_only_purl {
             if let Some(p) = &self.package {
-                for line in p.pretty_print(base_indent, display_options) {
+                for line in p.pretty_print(depth, display_options) {
                     lines.push(line);
                 }
             }
-            for line in self.main_derivation.pretty_print(base_indent, display_options) {
+            for line in self.main_derivation.pretty_print(depth, display_options) {
                 lines.push(line);
             }
             if self.sources.len() != 0 {
-                lines.push(PrettyPrintLine::new("sources:", base_indent + 1));
+                lines.push(PrettyPrintLine::new("sources:", depth + 1));
                 for source in &self.sources {
-                    for line in source.pretty_print(base_indent + 1, display_options) {
+                    for line in source.pretty_print(depth + 1, display_options) {
                         lines.push(line);
                     }
                 }
             }
             if self.patches.len() != 0 {
-                lines.push(PrettyPrintLine::new("patches:", base_indent + 1));
+                lines.push(PrettyPrintLine::new("patches:", depth + 1));
                 for patch in &self.patches {
-                    for line in patch.pretty_print(base_indent + 1, display_options) {
+                    for line in patch.pretty_print(depth + 1, display_options) {
                         lines.push(line);
                     }
                 }
@@ -682,7 +684,7 @@ impl PackageNode {
                     continue;
                 }
 
-                for line in child_package.pretty_print(&graph, base_indent + 1, display_options) {
+                for line in child_package.pretty_print(&graph, depth + 1, display_options) {
                     lines.push(line);
                 }
             }
@@ -720,7 +722,7 @@ fn add_visited_children(
 
 pub fn pretty_print_package_graph(
     package_graph: &PackageGraph,
-    base_indent: usize,
+    depth: usize,
     display_options: &DisplayOptions,
 ) -> String {
     let mut lines: Vec<PrettyPrintLine> = vec![];
@@ -741,7 +743,7 @@ pub fn pretty_print_package_graph(
         if !display_options.print_stdenv && is_stdenv(package_node.main_derivation.get_name().unwrap()) {
             continue;
         }
-        for line in package_node.pretty_print(package_graph, base_indent, display_options) {
+        for line in package_node.pretty_print(package_graph, depth, display_options) {
             lines.push(line);
         }
     }
