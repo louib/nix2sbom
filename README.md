@@ -1,8 +1,9 @@
 # nix2sbom
-[<img alt="github" src="https://img.shields.io/badge/github-louib/nix2sbom-bb7a3652750d7dfd9ba196181cf30f809b3d7012?style=for-the-badge&logo=github" height="20">](https://github.com/louib/nix2sbom)
+[![FlakeHub](https://img.shields.io/endpoint?url=https://flakehub.com/f/louib/nix2sbom/badge)](https://flakehub.com/flake/louib/nix2sbom)
+[![GitHub](https://img.shields.io/badge/github-louib/nix2sbom-bb7a3652750d7dfd9ba196181cf30f809b3d7012?logo=github")](https://github.com/louib/nix2sbom)
 [![Build Status](https://github.com/louib/nix2sbom/actions/workflows/merge.yml/badge.svg?branch=main)](https://github.com/louib/nix2sbom/actions/workflows/merge.yml)
-[![dependency status](https://deps.rs/repo/github/louib/nix2sbom/status.svg)](https://deps.rs/repo/github/louib/nix2sbom)
-[![License file](https://img.shields.io/github/license/louib/nix2sbom)](https://github.com/louib/nix2sbom/blob/main/LICENSE)
+[![Dependency Status](https://deps.rs/repo/github/louib/nix2sbom/status.svg)](https://deps.rs/repo/github/louib/nix2sbom)
+[![License File](https://img.shields.io/github/license/louib/nix2sbom)](https://github.com/louib/nix2sbom/blob/main/LICENSE)
 
 `nix2sbom` extracts the SBOM (Software Bill of Materials) from a Nix derivation
 
