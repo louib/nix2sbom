@@ -177,6 +177,9 @@ impl Derivation {
     }
 
     pub fn get_name(&self) -> Option<String> {
+        if let Some(pname) = self.env.get("pname") {
+            return Some(pname.to_string());
+        }
         if let Some(name) = self.env.get("name") {
             if let Some(version) = self.get_version_from_env() {
                 if name.contains(&version) {
@@ -1376,5 +1379,115 @@ mod tests {
         let derivation: Derivation = serde_json::from_str(derivation).unwrap();
         assert_eq!(derivation.get_name(), Some("zstd".to_string()));
         assert_eq!(derivation.get_version(), Some("1.5.5".to_string()));
+    }
+
+    #[test]
+    pub fn test_get_name_from_pname() {
+        let derivation: &str = r###"
+          {
+            "args": [
+              "-e",
+              "/nix/store/6xg259477c90a229xwmb53pdfkn6ig3g-default-builder.sh"
+            ],
+            "builder": "/nix/store/wllx077cz9z34zgrhwj2fc8r5r1hn6mx-bash-5.2-p15/bin/bash",
+            "env": {
+              "LANG": "C.UTF-8",
+              "__structuredAttrs": "",
+              "buildInputs": "/nix/store/3806m4syrck3andi5bw1jygclzrkbqnw-cairo-1.16.0-dev",
+              "builder": "/nix/store/wllx077cz9z34zgrhwj2fc8r5r1hn6mx-bash-5.2-p15/bin/bash",
+              "cmakeFlags": "",
+              "configureFlags": "",
+              "depsBuildBuild": "",
+              "depsBuildBuildPropagated": "",
+              "depsBuildTarget": "",
+              "depsBuildTargetPropagated": "",
+              "depsHostHost": "",
+              "depsHostHostPropagated": "",
+              "depsTargetTarget": "",
+              "depsTargetTargetPropagated": "",
+              "disallowedReferences": "",
+              "doCheck": "",
+              "doInstallCheck": "1",
+              "mesonFlags": "-Dpython=/nix/store/bhnfk4sy0ki5kp7hrbcq7pyqppbg7cwv-python3-3.10.13/bin/python3.10",
+              "name": "python3.10-pycairo-1.23.0",
+              "nativeBuildInputs": "/nix/store/bhnfk4sy0ki5kp7hrbcq7pyqppbg7cwv-python3-3.10.13 /nix/store/pg4wl9d9c6wb9i50wrgzxp5iqb0s5vbf-wrap-python-hook /nix/store/2znsgzazszhd9jns39fc688c15sdqakw-ensure-newer-sources-hook /nix/store/6ljpqq1imwfxadh586lj33ck7s84cgzv-python-remove-tests-dir-hook /nix/store/zq4g4h4dqvlk72nr9plcrqacxl37z3s1-python-catch-conflicts-hook /nix/store/3srpdh3b7an72xjnsdcl0h1ybpqwfq40-python-remove-bin-bytecode-hook /nix/store/vhns06ximyi3r11qy4zv3f63vrlg7kss-python-imports-check-hook.sh /nix/store/gzzh23js0w8mjr578j6sy7zlw6qlnzqz-python-namespaces-hook.sh /nix/store/aqjdg2d3g7nd4p0lwgr13v66vap3w9kd-meson-1.1.0 /nix/store/g0m0q186glhbxzv2mbh6y201r0gw989x-ninja-1.11.1 /nix/store/7g8wjkxx774bbnx0v06xc58qap2pvj6l-pkg-config-wrapper-0.29.2 /nix/store/459n6kmy4hsdaq8lr8s7ap7bshzymv2w-pytest-check-hook",
+              "out": "/nix/store/cp5adghz8pyv01a15w1a8xxzmhqrv7nj-python3.10-pycairo-1.23.0",
+              "outputs": "out",
+              "patches": "",
+              "pname": "pycairo",
+              "postFixup": "wrapPythonPrograms\n",
+              "propagatedBuildInputs": "/nix/store/bhnfk4sy0ki5kp7hrbcq7pyqppbg7cwv-python3-3.10.13",
+              "propagatedNativeBuildInputs": "",
+              "src": "/nix/store/ai0y1sqcklhjzjg04s7js5xc92g9j542-source",
+              "stdenv": "/nix/store/zpcxdbzssnhig0czrfvc1bd33lzrdy2i-stdenv-linux",
+              "strictDeps": "1",
+              "system": "i686-linux",
+              "version": "1.23.0"
+            },
+            "inputDrvs": {
+              "/nix/store/098ldl2py7yz31vwry8nhcjwrvs8gp56-source.drv": [
+                "out"
+              ],
+              "/nix/store/3mrp1f80d1838n6wrmcn2w8dbzd1b53d-python-remove-tests-dir-hook.drv": [
+                "out"
+              ],
+              "/nix/store/7aqhla8b73157glwx8klvnvdq014ykri-python-namespaces-hook.sh.drv": [
+                "out"
+              ],
+              "/nix/store/9m6yhn4w3myqhk6w83xfkl81w7d71avl-stdenv-linux.drv": [
+                "out"
+              ],
+              "/nix/store/ampp49cj5qvql9wlxarjpfybpqvn12nm-pytest-check-hook.drv": [
+                "out"
+              ],
+              "/nix/store/drqc6nfs5jg0cq6a65smcml6zysvbrnp-cairo-1.16.0.drv": [
+                "dev"
+              ],
+              "/nix/store/h4nfr8plqsc7628xgngqvc3ddr1kbj65-ensure-newer-sources-hook.drv": [
+                "out"
+              ],
+              "/nix/store/lj7902rl4qzxg8aa60y49m802759nh1p-meson-1.1.0.drv": [
+                "out"
+              ],
+              "/nix/store/mp10xqzg2ww4v0i7v81ccz5k0x9im77q-bash-5.2-p15.drv": [
+                "out"
+              ],
+              "/nix/store/njsalvap31p8vxyl22pzrdjxn34fb1kv-python3-3.10.13.drv": [
+                "out"
+              ],
+              "/nix/store/q3lg2gv800gzhx123jgyc2y85zv7i15y-python-imports-check-hook.sh.drv": [
+                "out"
+              ],
+              "/nix/store/rmi4ax1bzwdn0kgy2pr0yxrkcakyaw2d-pkg-config-wrapper-0.29.2.drv": [
+                "out"
+              ],
+              "/nix/store/s6da7mav0ac0fmqc4f5vrbh3qlfhgyx7-wrap-python-hook.drv": [
+                "out"
+              ],
+              "/nix/store/v8hm8h7cz5jj191fx071m18l04mp2vbx-ninja-1.11.1.drv": [
+                "out"
+              ],
+              "/nix/store/x28mrjkg28i9srjyhw1249f3g42hzyj4-python-catch-conflicts-hook.drv": [
+                "out"
+              ],
+              "/nix/store/y7qkcyqqlgy24hc42vfzildzhx5nx9pi-python-remove-bin-bytecode-hook.drv": [
+                "out"
+              ]
+            },
+            "inputSrcs": [
+              "/nix/store/6xg259477c90a229xwmb53pdfkn6ig3g-default-builder.sh"
+            ],
+            "outputs": {
+              "out": {
+                "path": "/nix/store/cp5adghz8pyv01a15w1a8xxzmhqrv7nj-python3.10-pycairo-1.23.0"
+              }
+            },
+            "system": "i686-linux"
+
+          }
+        "###;
+        let derivation: Derivation = serde_json::from_str(derivation).unwrap();
+        assert_eq!(derivation.get_name(), Some("pycairo".to_string()));
+        assert_eq!(derivation.get_version(), Some("1.23.0".to_string()));
     }
 }
