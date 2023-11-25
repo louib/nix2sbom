@@ -264,6 +264,12 @@ impl Derivation {
     }
 
     pub fn get_version(&self) -> Option<String> {
+        if let Some(revision) = self.env.get("rev") {
+            if revision.starts_with("v") {
+                return Some(revision[1..].to_string());
+            }
+            return Some(revision.to_string());
+        }
         let pname = match self.env.get("pname") {
             Some(n) => n,
             None => return None,
@@ -283,9 +289,6 @@ impl Derivation {
             if let Some(version) = crate::utils::get_semver_from_archive_url(&url) {
                 return Some(version);
             }
-        }
-        if let Some(commit_sha) = self.env.get("rev").cloned() {
-            return Some(commit_sha);
         }
         None
     }
@@ -1157,5 +1160,90 @@ mod tests {
         "###;
         let package: Package = serde_json::from_str(package_metadata).unwrap();
         assert_eq!(package.name, "LAStools-2.0.2");
+    }
+
+    #[test]
+    pub fn get_version_from_rev() {
+        let derivation: &str = r###"
+          {
+            "args": [
+              "-e",
+              "/nix/store/v7wqh83pzn39kjx6pdfixwyqlbmsqid3-builder.sh"
+            ],
+            "builder": "/nix/store/0rwyq0j954a7143p0wzd4rhycny8i967-bash-5.2-p15/bin/bash",
+            "env": {
+              "GIT_SSL_CAINFO": "/nix/store/9hx76jndjw5881pb83ghvlq6k4aqagz4-nss-cacert-3.92/etc/ssl/certs/ca-bundle.crt",
+              "__structuredAttrs": "",
+              "buildInputs": "",
+              "builder": "/nix/store/0rwyq0j954a7143p0wzd4rhycny8i967-bash-5.2-p15/bin/bash",
+              "cmakeFlags": "",
+              "configureFlags": "",
+              "deepClone": "",
+              "depsBuildBuild": "",
+              "depsBuildBuildPropagated": "",
+              "depsBuildTarget": "",
+              "depsBuildTargetPropagated": "",
+              "depsHostHost": "",
+              "depsHostHostPropagated": "",
+              "depsTargetTarget": "",
+              "depsTargetTargetPropagated": "",
+              "doCheck": "",
+              "doInstallCheck": "",
+              "fetchLFS": "",
+              "fetchSubmodules": "1",
+              "fetcher": "/nix/store/fqkqnkkwzhqn21fh9ba4nz75nhd89irm-nix-prefetch-git",
+              "impureEnvVars": "http_proxy https_proxy ftp_proxy all_proxy no_proxy GIT_PROXY_COMMAND NIX_GIT_SSL_CAINFO SOCKS_SERVER",
+              "leaveDotGit": "",
+              "mesonFlags": "",
+              "name": "source",
+              "nativeBuildInputs": "/nix/store/zy5r5ssh2zk6n1k34gv09fd9865lcniq-git-minimal-2.40.1",
+              "nonConeMode": "",
+              "out": "/nix/store/gj39c9gmjz3z5f6lgkcsl0lc07fwhq0c-source",
+              "outputHash": "sha256-I3PGgh0XqRkCFz7lUZ3Q4eU0+0GwaQcVb6t4Pru1kKo=",
+              "outputHashMode": "recursive",
+              "outputs": "out",
+              "patches": "",
+              "postFetch": "",
+              "preferLocalBuild": "1",
+              "propagatedBuildInputs": "",
+              "propagatedNativeBuildInputs": "",
+              "rev": "v0.8.2",
+              "sparseCheckout": "",
+              "stdenv": "/nix/store/9v8sc2q2dflxjcz1hsw84b10bvg0wand-stdenv-linux",
+              "strictDeps": "",
+              "system": "x86_64-linux",
+              "url": "https://github.com/libjxl/libjxl.git"
+            },
+            "inputDrvs": {
+              "/nix/store/331fppp0q0n5xy5mrhkg3abp3sbpb869-stdenv-linux.drv": [
+                "out"
+              ],
+              "/nix/store/33xwn0p89b0iwqxqdnp36hyy138flhkg-nss-cacert-3.92.drv": [
+                "out"
+              ],
+              "/nix/store/hla091y2jgs76hd8ps5ky6d81qzkdfz5-bash-5.2-p15.drv": [
+                "out"
+              ],
+              "/nix/store/pz619bwk8qgpb0zd3g11fm0hclk3pfz3-git-minimal-2.40.1.drv": [
+                "out"
+              ]
+            },
+            "inputSrcs": [
+              "/nix/store/fqkqnkkwzhqn21fh9ba4nz75nhd89irm-nix-prefetch-git",
+              "/nix/store/v7wqh83pzn39kjx6pdfixwyqlbmsqid3-builder.sh"
+            ],
+            "outputs": {
+              "out": {
+                "hash": "2373c6821d17a91902173ee5519dd0e1e534fb41b06907156fab783ebbb590aa",
+                "hashAlgo": "r:sha256",
+                "path": "/nix/store/gj39c9gmjz3z5f6lgkcsl0lc07fwhq0c-source"
+              }
+            },
+            "system": "x86_64-linux"
+          }
+        "###;
+        let derivation: Derivation = serde_json::from_str(derivation).unwrap();
+        assert_eq!(derivation.get_name(), Some("libjxl".to_string()));
+        assert_eq!(derivation.get_version(), Some("0.8.2".to_string()));
     }
 }
