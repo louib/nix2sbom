@@ -178,6 +178,12 @@ impl Derivation {
 
     pub fn get_name(&self) -> Option<String> {
         if let Some(name) = self.env.get("name") {
+            if let Some(version) = self.get_version_from_env() {
+                if name.contains(&version) {
+                    let package_version_suffix = "-".to_string() + &version;
+                    return Some(name.replace(&package_version_suffix, ""));
+                }
+            }
             if name != "source" {
                 return Some(name.to_string());
             }
@@ -263,12 +269,35 @@ impl Derivation {
         response
     }
 
-    pub fn get_version(&self) -> Option<String> {
+    // Get the version but only if found directly from the env dictionary of
+    // the derivation. This is used because the other techniques used to detect the
+    // version (like parsing the URLs) are less reliable. We need a high certainty that
+    // this is the correct version if we want to use the version to extract the package name
+    // (pname) from the name of the derivation.
+    fn get_version_from_env(&self) -> Option<String> {
         if let Some(revision) = self.env.get("rev") {
             if revision.starts_with("v") {
                 return Some(revision[1..].to_string());
             }
             return Some(revision.to_string());
+        }
+        if let Some(version) = self.env.get("version") {
+            return Some(version.to_string());
+        }
+        None
+    }
+
+    pub fn get_version(&self) -> Option<String> {
+        if let Some(version) = self.get_version_from_env() {
+            return Some(version);
+        }
+        for url in self.get_urls() {
+            if let Some(commit_sha) = crate::utils::get_git_sha_from_archive_url(&url) {
+                return Some(commit_sha);
+            }
+            if let Some(version) = crate::utils::get_semver_from_archive_url(&url) {
+                return Some(version);
+            }
         }
         let pname = match self.env.get("pname") {
             Some(n) => n,
@@ -281,14 +310,6 @@ impl Derivation {
         if name.contains(pname) {
             let package_name_prefix = pname.to_string() + "-";
             return Some(name.replace(&package_name_prefix, ""));
-        }
-        for url in self.get_urls() {
-            if let Some(commit_sha) = crate::utils::get_git_sha_from_archive_url(&url) {
-                return Some(commit_sha);
-            }
-            if let Some(version) = crate::utils::get_semver_from_archive_url(&url) {
-                return Some(version);
-            }
         }
         None
     }
@@ -1245,5 +1266,102 @@ mod tests {
         let derivation: Derivation = serde_json::from_str(derivation).unwrap();
         assert_eq!(derivation.get_name(), Some("libjxl".to_string()));
         assert_eq!(derivation.get_version(), Some("0.8.2".to_string()));
+    }
+
+    #[test]
+    pub fn test_remove_version_from_name() {
+        let derivation: &str = r###"
+          {
+            "args": [
+              "-e",
+              "/nix/store/6xg259477c90a229xwmb53pdfkn6ig3g-default-builder.sh"
+            ],
+            "builder": "/nix/store/0rwyq0j954a7143p0wzd4rhycny8i967-bash-5.2-p15/bin/bash",
+            "env": {
+              "LDFLAGS": "",
+              "__structuredAttrs": "",
+              "bin": "/nix/store/j41ms763gpyya3hylqmaq1p108bhvkcm-zstd-1.5.5-bin",
+              "buildInputs": "/nix/store/2i83qvxdxps1s91335icgkd2mp6v6b91-bash-5.2-p15-dev",
+              "builder": "/nix/store/0rwyq0j954a7143p0wzd4rhycny8i967-bash-5.2-p15/bin/bash",
+              "checkPhase": "runHook preCheck\n# Patch shebangs for playTests\npatchShebangs ../programs/zstdgrep\nctest -R playTests # The only relatively fast test.\nrunHook postCheck\n",
+              "cmakeDir": "../build/cmake",
+              "cmakeFlags": "-DZSTD_BUILD_CONTRIB:BOOL=ON -DZSTD_BUILD_SHARED:BOOL=ON -DZSTD_BUILD_STATIC:BOOL=OFF -DZSTD_BUILD_TESTS:BOOL=ON -DZSTD_LEGACY_SUPPORT:BOOL=OFF -DZSTD_PROGRAMS_LINK_SHARED:BOOL=ON",
+              "configureFlags": "",
+              "depsBuildBuild": "",
+              "depsBuildBuildPropagated": "",
+              "depsBuildTarget": "",
+              "depsBuildTargetPropagated": "",
+              "depsHostHost": "",
+              "depsHostHostPropagated": "",
+              "depsTargetTarget": "",
+              "depsTargetTargetPropagated": "",
+              "dev": "/nix/store/4pifi04nz9l2i0l692ny148q94klml0r-zstd-1.5.5-dev",
+              "doCheck": "1",
+              "doInstallCheck": "",
+              "dontUseCmakeBuildDir": "1",
+              "man": "/nix/store/qxv3dnwvi2xw1kx8bhf8lcyssbdvna8d-zstd-1.5.5-man",
+              "mesonFlags": "",
+              "name": "zstd-1.5.5",
+              "nativeBuildInputs": "/nix/store/hdwhs75n9ydc4pdqv0hamjzjv1fkw1zz-cmake-boot-3.25.3 /nix/store/xv00ljxfrgdi9m53w96mj7pqgb0m0c3l-file-5.44-dev",
+              "out": "/nix/store/81d38brw9cnw2qk2kynrf5dr6hhkcq66-zstd-1.5.5",
+              "outputs": "bin dev man out",
+              "patches": "/nix/store/n91acyjrlchm0snw0w16i4683pf788ax-playtests-darwin.patch",
+              "pname": "zstd",
+              "postPatch": "substituteInPlace build/cmake/CMakeLists.txt \\\n  --replace 'message(SEND_ERROR \"You need to build static library to build tests\")' \"\"\nsubstituteInPlace build/cmake/tests/CMakeLists.txt \\\n  --replace 'libzstd_static' 'libzstd_shared'\nsed -i \\\n  \"1aexport LD_LIBRARY_PATH=$PWD/build_/lib\" \\\n  tests/playTests.sh\n",
+              "preConfigure": "mkdir -p build_ && cd $_\n",
+              "preInstall": "mkdir -p $bin/bin\nsubstituteInPlace ../programs/zstdgrep \\\n  --replace \":-grep\" \":-/nix/store/b4in4hmq54h6l34a0v6ha40z97c0lzw2-gnugrep-3.7/bin/grep\" \\\n  --replace \":-zstdcat\" \":-$bin/bin/zstdcat\"\n\nsubstituteInPlace ../programs/zstdless \\\n  --replace \"zstdcat\" \"$bin/bin/zstdcat\"\ncp contrib/pzstd/pzstd $bin/bin/pzstd\n",
+              "propagatedBuildInputs": "",
+              "propagatedNativeBuildInputs": "",
+              "src": "/nix/store/2w0cnsrfgapi5jf9z9yciir4hgz7nyj8-source",
+              "stdenv": "/nix/store/gv2cl6qvvslz5h15vqd89f1rpvrdg5yc-stdenv-linux",
+              "strictDeps": "",
+              "system": "x86_64-linux",
+              "version": "1.5.5"
+            },
+            "inputDrvs": {
+              "/nix/store/975cwk57d5xy6cyakapsifyg19n3g516-file-5.44.drv": [
+                "dev"
+              ],
+              "/nix/store/f69xwgpf415s7fvg64qhsfmqpmb7xnjg-source.drv": [
+                "out"
+              ],
+              "/nix/store/hla091y2jgs76hd8ps5ky6d81qzkdfz5-bash-5.2-p15.drv": [
+                "dev",
+                "out"
+              ],
+              "/nix/store/im7dywhi0ycfnkdplpmh9xqzynf6v2mg-cmake-boot-3.25.3.drv": [
+                "out"
+              ],
+              "/nix/store/m4cyqwyzda46912dirznjzx5cml6d018-gnugrep-3.7.drv": [
+                "out"
+              ],
+              "/nix/store/z9vnfwzs0226f7qid0j0iglfbpvb61hx-stdenv-linux.drv": [
+                "out"
+              ]
+            },
+            "inputSrcs": [
+              "/nix/store/6xg259477c90a229xwmb53pdfkn6ig3g-default-builder.sh",
+              "/nix/store/n91acyjrlchm0snw0w16i4683pf788ax-playtests-darwin.patch"
+            ],
+            "outputs": {
+              "bin": {
+                "path": "/nix/store/j41ms763gpyya3hylqmaq1p108bhvkcm-zstd-1.5.5-bin"
+              },
+              "dev": {
+                "path": "/nix/store/4pifi04nz9l2i0l692ny148q94klml0r-zstd-1.5.5-dev"
+              },
+              "man": {
+                "path": "/nix/store/qxv3dnwvi2xw1kx8bhf8lcyssbdvna8d-zstd-1.5.5-man"
+              },
+              "out": {
+                "path": "/nix/store/81d38brw9cnw2qk2kynrf5dr6hhkcq66-zstd-1.5.5"
+              }
+            },
+            "system": "x86_64-linux"
+          }
+        "###;
+        let derivation: Derivation = serde_json::from_str(derivation).unwrap();
+        assert_eq!(derivation.get_name(), Some("zstd".to_string()));
+        assert_eq!(derivation.get_version(), Some("1.5.5".to_string()));
     }
 }
