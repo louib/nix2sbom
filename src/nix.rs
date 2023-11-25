@@ -31,6 +31,12 @@ pub struct DisplayOptions {
     pub max_depth: Option<usize>,
 }
 
+pub enum PackageScope {
+    PERL,
+    PYTHON,
+    RUBY,
+}
+
 pub fn is_stdenv(name: &str) -> bool {
     let stdenv_names = vec![
         "stdenv-linux",
@@ -133,6 +139,13 @@ pub type Packages = HashMap<String, Package>;
 impl Derivation {
     pub fn get_derivations_for_current_system() -> Result<Derivations, Box<dyn Error>> {
         Derivation::get_derivations(CURRENT_SYSTEM_PATH)
+    }
+
+    pub fn get_scope(&self) -> Option<PackageScope> {
+        if self.env.get("fullperl").is_some() {
+            return Some(PackageScope::PERL);
+        }
+        None
     }
 
     pub fn get_derivations(file_path: &str) -> Result<Derivations, Box<dyn Error>> {
