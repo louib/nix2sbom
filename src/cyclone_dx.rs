@@ -73,6 +73,11 @@ pub fn dump_package_node(
     package_node: &crate::nix::PackageNode,
     package_graph: &crate::nix::PackageGraph,
 ) -> Option<Component> {
+    // FIXME this should be configurable.
+    if package_node.is_inline_script() {
+        return None;
+    }
+
     let mut component = dump_derivation(package_derivation_path, package_node);
     let mut sub_components: Vec<Component> = vec![];
     let main_source_path = package_node.main_derivation.get_source_path();

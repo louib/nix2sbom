@@ -313,6 +313,10 @@ impl Derivation {
         }
         None
     }
+
+    pub fn is_inline_script(&self) -> bool {
+        self.env.get("text").is_some()
+    }
 }
 
 #[derive(Debug)]
@@ -635,6 +639,10 @@ impl PackageNode {
         return None;
     }
 
+    pub fn is_inline_script(&self) -> bool {
+        self.main_derivation.is_inline_script()
+    }
+
     pub fn get_version(&self) -> Option<String> {
         if let Some(p) = &self.package {
             if !p.version.is_empty() {
@@ -705,6 +713,11 @@ impl PackageNode {
         display_options: &DisplayOptions,
     ) -> Vec<PrettyPrintLine> {
         let mut lines: Vec<PrettyPrintLine> = vec![];
+
+        // FIXME this should be configurable.
+        if self.is_inline_script() {
+            return lines;
+        }
 
         if depth >= display_options.max_depth.unwrap_or(std::usize::MAX) {
             return lines;
