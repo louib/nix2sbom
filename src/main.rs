@@ -42,6 +42,10 @@ struct NixToSBOM {
     #[clap(long)]
     metadata_path: Option<String>,
 
+    /// Do not use the metadata from the store to generate the SBOM.
+    #[clap(long, short)]
+    no_meta: bool,
+
     /// Generate a SBOM for the current system.
     #[clap(long, short)]
     current_system: bool,
@@ -86,7 +90,7 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     }
     log::info!("Found {} derivations", derivations.len());
 
-    let packages = crate::nix::get_packages(args.metadata_path)?;
+    let packages = crate::nix::get_packages(args.metadata_path, args.no_meta)?;
     log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");

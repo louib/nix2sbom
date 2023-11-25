@@ -176,8 +176,23 @@ impl Derivation {
         Ok(flat_derivations)
     }
 
-    pub fn get_name(&self) -> Option<&String> {
-        self.env.get("name")
+    pub fn get_name(&self) -> Option<String> {
+        if let Some(name) = self.env.get("name") {
+            if name != "source" {
+                return Some(name.to_string());
+            }
+        }
+
+        for url in self.get_urls() {
+            if let Some(project_name) = crate::utils::get_project_name_from_generic_url(&url) {
+                return Some(project_name.to_string());
+            }
+            if let Some(project_name) = crate::utils::get_project_name_from_archive_url(&url) {
+                return Some(project_name.to_string());
+            }
+        }
+
+        None
     }
 
     // Returns the store path of the stdenv used.
@@ -294,7 +309,13 @@ pub fn get_derivation_path(store_path: &str) -> String {
     // TODO nix-store -qd store_path
     "".to_string()
 }
-pub fn get_packages(metadata_path: Option<String>) -> Result<Packages, String> {
+pub fn get_packages(metadata_path: Option<String>, no_meta: bool) -> Result<Packages, String> {
+    let mut packages: Packages = Packages::default();
+
+    if no_meta {
+        return Ok(packages);
+    }
+
     let mut content: Vec<u8> = vec![];
     if let Some(path) = metadata_path {
         log::info!("Using the package metadata from {}", &path);
@@ -318,7 +339,6 @@ pub fn get_packages(metadata_path: Option<String>) -> Result<Packages, String> {
 
     let raw_packages: Packages = serde_json::from_slice(&content).map_err(|e| e.to_string())?;
 
-    let mut packages: Packages = Packages::default();
     // Re-index the packages using the internal package name.
     for package in raw_packages.values() {
         packages.insert(package.name.to_string(), package.clone());
@@ -575,26 +595,16 @@ impl PackageNode {
             }
         }
 
+        if let Some(name) = self.main_derivation.get_name() {
+            return Some(name);
+        }
+
+        // FIXME I'm not sure we should rely on the sources to get the name here.
         for source in &self.sources {
             if let Some(source_name) = source.get_name() {
                 if source_name != "source" {
                     return Some(source_name.to_string());
                 }
-            }
-        }
-
-        if let Some(name) = self.main_derivation.get_name() {
-            if name != "source" {
-                return Some(name.to_string());
-            }
-        }
-
-        for url in self.main_derivation.get_urls() {
-            if let Some(project_name) = crate::utils::get_project_name_from_generic_url(&url) {
-                return Some(project_name.to_string());
-            }
-            if let Some(project_name) = crate::utils::get_project_name_from_archive_url(&url) {
-                return Some(project_name.to_string());
             }
         }
 
@@ -717,7 +727,8 @@ impl PackageNode {
                         continue;
                     }
                 };
-                if !display_options.print_stdenv && is_stdenv(child_package.main_derivation.get_name().unwrap())
+                if !display_options.print_stdenv
+                    && is_stdenv(&child_package.main_derivation.get_name().unwrap())
                 {
                     continue;
                 }
@@ -778,7 +789,7 @@ pub fn pretty_print_package_graph(
     }
 
     for (derivation_path, package_node) in package_graph {
-        if !display_options.print_stdenv && is_stdenv(package_node.main_derivation.get_name().unwrap()) {
+        if !display_options.print_stdenv && is_stdenv(&package_node.main_derivation.get_name().unwrap()) {
             continue;
         }
         for line in package_node.pretty_print(package_graph, depth, display_options) {
@@ -827,7 +838,7 @@ pub fn get_package_graph(
                 continue;
             }
         };
-        let package = match packages.get(derivation_name) {
+        let package = match packages.get(&derivation_name) {
             Some(p) => Some(p.clone()),
             None => None,
         };
@@ -862,10 +873,10 @@ pub fn get_package_graph(
                     log::trace!("Derivation without a name {:?}", &child_derivation);
                     // FIXME this is ugly. We should just add the input derivations in the graph
                     // traversal list and move on instead of using a placeholder value.
-                    "NOT_AN_ACTUAL_NAME"
+                    "NOT_AN_ACTUAL_NAME".to_string()
                 }
             };
-            if child_derivation_name != "source" && packages.get(child_derivation_name).is_some() {
+            if child_derivation_name != "source" && packages.get(&child_derivation_name).is_some() {
                 current_node.children.insert(child_derivation_path.to_string());
                 // FIXME should we really continue here? Are there derivations that define both a
                 // package meta and urls to fetch?

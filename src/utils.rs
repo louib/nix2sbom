@@ -91,7 +91,12 @@ pub fn get_git_url_from_generic_url(generic_url: &str) -> Option<String> {
     None
 }
 
+pub fn replace_mirror_protocol(url: &str) -> String {
+    return url.replace("mirror://", "https://");
+}
+
 pub fn get_project_name_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match GITHUB_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -114,6 +119,7 @@ pub fn get_project_name_from_generic_url(generic_url: &str) -> Option<String> {
 }
 
 pub fn get_github_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match GITHUB_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -127,6 +133,7 @@ pub fn get_github_url_from_generic_url(generic_url: &str) -> Option<String> {
 }
 
 pub fn get_gitlab_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match GITLAB_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -140,6 +147,7 @@ pub fn get_gitlab_url_from_generic_url(generic_url: &str) -> Option<String> {
 }
 
 pub fn get_gnome_gitlab_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match GNOME_GITLAB_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -156,6 +164,7 @@ pub fn get_gnome_gitlab_url_from_generic_url(generic_url: &str) -> Option<String
 }
 
 pub fn get_pagure_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match PAGURE_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -168,6 +177,7 @@ pub fn get_pagure_url_from_generic_url(generic_url: &str) -> Option<String> {
 }
 
 pub fn get_gnu_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match GNU_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -180,6 +190,7 @@ pub fn get_gnu_url_from_generic_url(generic_url: &str) -> Option<String> {
 }
 
 pub fn get_nongnu_release_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match NONGNU_RELEASE_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -195,6 +206,7 @@ pub fn get_nongnu_release_url_from_generic_url(generic_url: &str) -> Option<Stri
 }
 
 pub fn get_nongnu_project_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     let captured_groups = match NONGNU_PROJECT_REGEX.captures(generic_url) {
         Some(g) => g,
         None => return None,
@@ -210,6 +222,7 @@ pub fn get_nongnu_project_url_from_generic_url(generic_url: &str) -> Option<Stri
 }
 
 pub fn get_bitbucket_url_from_generic_url(generic_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(generic_url);
     // Bitbucket does not allow anonymous git access by default, so this
     // might fail.
     let captured_groups = match BITBUCKET_PROJECT_REGEX.captures(generic_url) {
@@ -225,6 +238,7 @@ pub fn get_bitbucket_url_from_generic_url(generic_url: &str) -> Option<String> {
 }
 
 pub fn get_semver_from_archive_url(archive_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(archive_url);
     let archive_filename = archive_url.split("/").last().unwrap();
     let captured_groups = match SEMVER_REGEX.captures(archive_filename) {
         Some(g) => g,
@@ -237,6 +251,7 @@ pub fn get_semver_from_archive_url(archive_url: &str) -> Option<String> {
 }
 
 pub fn get_git_sha_from_archive_url(archive_url: &str) -> Option<String> {
+    let generic_url = &replace_mirror_protocol(archive_url);
     let captured_groups = match GIT_SHA_REGEX.captures(archive_url) {
         Some(g) => g,
         None => return None,
