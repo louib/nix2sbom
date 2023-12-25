@@ -111,6 +111,15 @@ impl DerivationBuilder {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(Clone)]
+pub struct InputDerivation {
+    outputs: Vec<String>,
+    // dynamicOutputs
+}
+
+#[derive(Debug)]
+#[derive(Deserialize)]
+#[derive(Serialize)]
+#[derive(Clone)]
 pub struct Derivation {
     pub outputs: HashMap<String, Output>,
 
@@ -118,7 +127,7 @@ pub struct Derivation {
     pub inputs_sources: Vec<String>,
 
     #[serde(rename = "inputDrvs")]
-    pub input_derivations: HashMap<String, Vec<String>>,
+    pub input_derivations: HashMap<String, InputDerivation>,
 
     pub system: String,
 
