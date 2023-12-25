@@ -94,7 +94,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");
-    let package_graph = crate::nix::get_package_graph(&derivations, &packages);
+    // let package_graph = crate::nix::get_package_graph(&derivations, &packages);
+    let package_graph = crate::nix::get_package_list(&derivations, &packages);
     log::info!("{} nodes in the package graph", package_graph.len());
 
     log::info!("Creating the SBOM");

@@ -877,6 +877,36 @@ impl PrettyPrintLine {
     }
 }
 
+pub fn get_package_list(
+    derivations: &crate::nix::Derivations,
+    packages: &crate::nix::Packages,
+) -> PackageGraph {
+    let mut response = PackageGraph::default();
+
+    for (derivation_path, derivation) in derivations.iter() {
+        let derivation_name = match derivation.get_name() {
+            Some(n) => n,
+            None => {
+                log::warn!("Found derivation without a name at {}", derivation_path);
+                continue;
+            }
+        };
+        let package = match packages.get(&derivation_name) {
+            Some(p) => Some(p.clone()),
+            None => None,
+        };
+        let mut current_node = PackageNode {
+            package,
+            main_derivation: derivation.clone(),
+            children: BTreeSet::default(),
+            sources: vec![],
+            patches: vec![],
+        };
+        response.insert(derivation_path.clone(), current_node);
+    }
+    response
+}
+
 pub fn get_package_graph(
     derivations: &crate::nix::Derivations,
     packages: &crate::nix::Packages,
