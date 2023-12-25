@@ -252,7 +252,7 @@ impl Derivation {
         None
     }
 
-    // Returns the store path of the stdenv used.
+    // Returns the URLs associated with the derivation
     pub fn get_urls(&self) -> Vec<String> {
         let mut response: Vec<String> = vec![];
         if let Some(url) = self.env.get("url") {
