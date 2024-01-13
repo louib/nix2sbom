@@ -849,6 +849,37 @@ impl PackageGraph {
         }
         response
     }
+
+    pub fn pretty_print(&self, depth: usize, display_options: &DisplayOptions) -> String {
+        let mut lines: Vec<PrettyPrintLine> = vec![];
+        let mut response = "".to_string();
+
+        let mut visited_children: HashSet<String> = HashSet::default();
+        for (derivation_path, package_node) in &self.nodes {
+            if visited_children.contains(derivation_path) {
+                continue;
+            }
+            for child_derivation_path in &package_node.children {
+                let child = self.nodes.get(child_derivation_path).unwrap().clone();
+                add_visited_children(child, &self, &mut visited_children);
+            }
+        }
+
+        for (derivation_path, package_node) in &self.nodes {
+            if !display_options.print_stdenv && is_stdenv(&package_node.main_derivation.get_name().unwrap()) {
+                continue;
+            }
+            for line in package_node.pretty_print(self, depth, display_options) {
+                lines.push(line);
+            }
+        }
+
+        for line in lines {
+            response += &line.to_string();
+            response += "\n";
+        }
+        response
+    }
 }
 
 fn add_visited_children(
@@ -874,41 +905,6 @@ fn add_visited_children(
 
         add_visited_children(&child_package, &package_graph, visited_children);
     }
-}
-
-pub fn pretty_print_package_graph(
-    package_graph: &PackageGraph,
-    depth: usize,
-    display_options: &DisplayOptions,
-) -> String {
-    let mut lines: Vec<PrettyPrintLine> = vec![];
-    let mut response = "".to_string();
-
-    let mut visited_children: HashSet<String> = HashSet::default();
-    for (derivation_path, package_node) in &package_graph.nodes {
-        if visited_children.contains(derivation_path) {
-            continue;
-        }
-        for child_derivation_path in &package_node.children {
-            let child = package_graph.nodes.get(child_derivation_path).unwrap().clone();
-            add_visited_children(child, &package_graph, &mut visited_children);
-        }
-    }
-
-    for (derivation_path, package_node) in &package_graph.nodes {
-        if !display_options.print_stdenv && is_stdenv(&package_node.main_derivation.get_name().unwrap()) {
-            continue;
-        }
-        for line in package_node.pretty_print(package_graph, depth, display_options) {
-            lines.push(line);
-        }
-    }
-
-    for line in lines {
-        response += &line.to_string();
-        response += "\n";
-    }
-    response
 }
 
 // Small struct to make it easier to pretty-print the

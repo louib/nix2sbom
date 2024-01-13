@@ -69,11 +69,7 @@ impl Format {
                     max_depth: Some(1),
                 };
 
-                return Ok(crate::nix::pretty_print_package_graph(
-                    &package_graph,
-                    0,
-                    &display_options,
-                ));
+                return Ok(package_graph.pretty_print(0, &display_options));
             }
             crate::sbom::Format::OutPaths => {
                 return Ok(package_graph.print_out_paths());
