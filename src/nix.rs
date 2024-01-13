@@ -111,6 +111,24 @@ impl DerivationBuilder {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(Clone)]
+pub struct InputDerivationDetails {
+    outputs: Vec<String>,
+}
+
+#[derive(Debug)]
+#[derive(Deserialize)]
+#[derive(Serialize)]
+#[derive(Clone)]
+#[serde(untagged)]
+pub enum InputDerivation {
+    List(Vec<String>),
+    Details(InputDerivationDetails),
+}
+
+#[derive(Debug)]
+#[derive(Deserialize)]
+#[derive(Serialize)]
+#[derive(Clone)]
 pub struct Derivation {
     pub outputs: HashMap<String, Output>,
 
@@ -118,7 +136,7 @@ pub struct Derivation {
     pub inputs_sources: Vec<String>,
 
     #[serde(rename = "inputDrvs")]
-    pub input_derivations: HashMap<String, Vec<String>>,
+    pub input_derivations: HashMap<String, InputDerivation>,
 
     pub system: String,
 
@@ -150,7 +168,8 @@ impl Derivation {
 
     pub fn get_derivations(file_path: &str) -> Result<Derivations, Box<dyn Error>> {
         let output = Command::new("nix")
-            .arg("show-derivation")
+            .arg("derivation")
+            .arg("show")
             // FIXME we might want to disable impure by default.
             .arg("--impure")
             .arg("-r")
