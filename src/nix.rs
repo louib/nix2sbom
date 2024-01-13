@@ -742,11 +742,16 @@ impl PackageNode {
     }
 
     pub fn print_out_paths(&self, package_graph: &PackageGraph, depth: usize) -> String {
+        if is_stdenv(&self.main_derivation.get_name().unwrap_or("".to_string())) {
+            return "".to_string();
+        }
+
         let mut response = "".to_string();
         for child_derivation_path in self.children.iter() {
+            let child_derivation = package_graph.nodes.get(child_derivation_path).unwrap();
+
             let out_path = "  ".repeat(depth) + &child_derivation_path + "\n";
             response += &out_path;
-            let child_derivation = package_graph.nodes.get(child_derivation_path).unwrap();
             response += &child_derivation.print_out_paths(package_graph, depth + 1);
         }
         response
@@ -834,7 +839,8 @@ pub struct PackageGraph {
 
 pub fn print_out_paths(package_graph: &PackageGraph) -> String {
     let mut response: String = "".to_string();
-    for (derivation_path, package_node) in &package_graph.nodes {
+    for derivation_path in &package_graph.root_nodes {
+        let child_derivation = package_graph.nodes.get(derivation_path).unwrap();
         let out_path = "  ".repeat(0) + &derivation_path + "\n";
         response += &out_path;
         let child_derivation = package_graph.nodes.get(derivation_path).unwrap();
@@ -1013,6 +1019,7 @@ pub fn get_package_graph_next(
 ) -> PackageGraph {
     let mut response = PackageGraph::default();
 
+    let mut all_child_derivations: HashSet<String> = HashSet::default();
     for (derivation_path, derivation) in derivations.iter() {
         let mut current_node = PackageNode {
             package: None,
@@ -1022,27 +1029,21 @@ pub fn get_package_graph_next(
             patches: vec![],
         };
 
-        let mut child_derivation_paths: BTreeSet<String> = BTreeSet::default();
         for input_derivation_path in derivation.input_derivations.keys() {
-            child_derivation_paths.insert(input_derivation_path.clone());
+            current_node.children.insert(input_derivation_path.to_string());
+            all_child_derivations.insert(input_derivation_path.clone());
         }
 
-        let mut visited_derivations: HashSet<String> = HashSet::default();
-
-        while child_derivation_paths.len() != 0 {
-            let child_derivation_path = child_derivation_paths.pop_last().unwrap();
-            if visited_derivations.contains(&child_derivation_path) {
-                continue;
-            }
-            visited_derivations.insert(child_derivation_path.clone());
-
-            let child_derivation = derivations.get(&child_derivation_path).unwrap();
-            for input_derivation_path in child_derivation.input_derivations.keys() {
-                child_derivation_paths.insert(input_derivation_path.clone());
-            }
-        }
         response.nodes.insert(derivation_path.clone(), current_node);
     }
+
+    for (derivation_path, derivation) in derivations.iter() {
+        if all_child_derivations.contains(derivation_path) {
+            continue;
+        }
+        response.root_nodes.insert(derivation_path.to_string());
+    }
+
     response
 }
 
