@@ -1,11 +1,13 @@
 pub const CYCLONE_DX_NAME: &str = "CycloneDX";
 pub const SPDX_NAME: &str = "SPDX";
 pub const PRETTY_PRINT_NAME: &str = "pretty-print";
+pub const OUT_PATHS_NAME: &str = "pretty-print";
 
 pub enum Format {
     SPDX,
     CycloneDX,
     PrettyPrint,
+    OutPaths,
 }
 
 impl Format {
@@ -19,6 +21,9 @@ impl Format {
         if format.ends_with("pretty") {
             return Some(Format::PrettyPrint);
         }
+        if format.ends_with("out-paths") {
+            return Some(Format::OutPaths);
+        }
         None
     }
 
@@ -27,6 +32,7 @@ impl Format {
             crate::sbom::Format::CycloneDX => CYCLONE_DX_NAME.to_string(),
             crate::sbom::Format::SPDX => SPDX_NAME.to_string(),
             crate::sbom::Format::PrettyPrint => PRETTY_PRINT_NAME.to_string(),
+            crate::sbom::Format::OutPaths => OUT_PATHS_NAME.to_string(),
         }
     }
 
@@ -34,8 +40,9 @@ impl Format {
         match self {
             crate::sbom::Format::CycloneDX => crate::sbom::SerializationFormat::JSON,
             crate::sbom::Format::SPDX => crate::sbom::SerializationFormat::JSON,
-            // We don't really care which value is returned in this case.
+            // We don't really care which value is returned in those cases.
             crate::sbom::Format::PrettyPrint => crate::sbom::SerializationFormat::XML,
+            crate::sbom::Format::OutPaths => crate::sbom::SerializationFormat::XML,
         }
     }
 
@@ -67,6 +74,9 @@ impl Format {
                     0,
                     &display_options,
                 ));
+            }
+            crate::sbom::Format::OutPaths => {
+                return Ok(crate::nix::print_out_paths(&package_graph));
             }
         }
     }
