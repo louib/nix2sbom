@@ -746,7 +746,7 @@ impl PackageNode {
         for child_derivation_path in self.children.iter() {
             let out_path = "  ".repeat(depth) + &child_derivation_path + "\n";
             response += &out_path;
-            let child_derivation = package_graph.get(child_derivation_path).unwrap();
+            let child_derivation = package_graph.nodes.get(child_derivation_path).unwrap();
             response += &child_derivation.print_out_paths(package_graph, depth + 1);
         }
         response
@@ -800,7 +800,7 @@ impl PackageNode {
 
         if self.children.len() != 0 {
             for child_package_derivation_path in self.children.iter() {
-                let child_package = match graph.get(child_package_derivation_path) {
+                let child_package = match graph.nodes.get(child_package_derivation_path) {
                     Some(p) => p,
                     None => {
                         log::warn!(
@@ -825,14 +825,19 @@ impl PackageNode {
     }
 }
 
-pub type PackageGraph = BTreeMap<String, PackageNode>;
+#[derive(Debug)]
+#[derive(Default)]
+pub struct PackageGraph {
+    pub nodes: BTreeMap<String, PackageNode>,
+    pub root_nodes: BTreeSet<String>,
+}
 
 pub fn print_out_paths(package_graph: &PackageGraph) -> String {
     let mut response: String = "".to_string();
-    for (derivation_path, package_node) in package_graph {
+    for (derivation_path, package_node) in &package_graph.nodes {
         let out_path = "  ".repeat(0) + &derivation_path + "\n";
         response += &out_path;
-        let child_derivation = package_graph.get(derivation_path).unwrap();
+        let child_derivation = package_graph.nodes.get(derivation_path).unwrap();
         response += &child_derivation.print_out_paths(package_graph, 1);
     }
     response
@@ -848,7 +853,7 @@ fn add_visited_children(
             continue;
         }
         visited_children.insert(child_derivation_path.to_string());
-        let child_package = match package_graph.get(child_derivation_path) {
+        let child_package = match package_graph.nodes.get(child_derivation_path) {
             Some(p) => p,
             None => {
                 log::warn!(
@@ -872,17 +877,17 @@ pub fn pretty_print_package_graph(
     let mut response = "".to_string();
 
     let mut visited_children: HashSet<String> = HashSet::default();
-    for (derivation_path, package_node) in package_graph {
+    for (derivation_path, package_node) in &package_graph.nodes {
         if visited_children.contains(derivation_path) {
             continue;
         }
         for child_derivation_path in &package_node.children {
-            let child = package_graph.get(child_derivation_path).unwrap().clone();
+            let child = package_graph.nodes.get(child_derivation_path).unwrap().clone();
             add_visited_children(child, &package_graph, &mut visited_children);
         }
     }
 
-    for (derivation_path, package_node) in package_graph {
+    for (derivation_path, package_node) in &package_graph.nodes {
         if !display_options.print_stdenv && is_stdenv(&package_node.main_derivation.get_name().unwrap()) {
             continue;
         }
@@ -997,7 +1002,7 @@ pub fn get_package_graph(
                 child_derivation_paths.insert(input_derivation_path.clone());
             }
         }
-        response.insert(derivation_path.clone(), current_node);
+        response.nodes.insert(derivation_path.clone(), current_node);
     }
     response
 }
@@ -1036,7 +1041,7 @@ pub fn get_package_graph_next(
                 child_derivation_paths.insert(input_derivation_path.clone());
             }
         }
-        response.insert(derivation_path.clone(), current_node);
+        response.nodes.insert(derivation_path.clone(), current_node);
     }
     response
 }
