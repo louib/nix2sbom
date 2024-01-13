@@ -76,7 +76,7 @@ impl Format {
                 ));
             }
             crate::sbom::Format::OutPaths => {
-                return Ok(crate::nix::print_out_paths(&package_graph));
+                return Ok(package_graph.print_out_paths());
             }
         }
     }
