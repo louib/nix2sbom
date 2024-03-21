@@ -198,7 +198,17 @@ fn get_commits(patches: &Vec<crate::nix::Derivation>) -> Vec<Commit> {
         let mut commits: Vec<Commit> = vec![];
         for patch in patches {
             let mut commit = CommitBuilder::default();
-            commit.url(patch.get_url().unwrap());
+            let commit_url = match patch.get_url() {
+                Some(u) => u,
+                None => {
+                    log::warn!(
+                        "No URL found for {}",
+                        patch.get_name().unwrap_or("unknow derivation".to_string())
+                    );
+                    continue;
+                }
+            };
+            commit.url(commit_url);
             // TODO we could also populate the uid, which is the commit SHA
             commits.push(commit.build().unwrap())
         }
