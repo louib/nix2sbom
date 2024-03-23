@@ -906,7 +906,7 @@ pub struct PackageGraphStats {
 
     pub patches_count: usize,
 
-    /// Number of packages which had an associated entry in the package meta dictionnary.
+    /// Number of derivations which had an associated entry in the package meta dictionnary.
     pub package_meta_count: usize,
 }
 
