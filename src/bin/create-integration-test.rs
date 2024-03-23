@@ -28,10 +28,25 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     let packages = nix2sbom::nix::get_packages(None, args.no_meta)?;
 
-    let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
-    // let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
+    // let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
 
     let package_graph_stats = package_graph.get_stats();
+
+    let mut required_packages = nix2sbom::nix::Packages::default();
+    for (derivation_path, derivation) in derivations.iter() {
+        let derivation_name = match derivation.get_name() {
+            Some(n) => n,
+            None => continue,
+        };
+        if packages.contains_key(&derivation_name) {
+            required_packages.insert(
+                derivation_name.to_string(),
+                packages.get(&derivation_name).unwrap().clone(),
+            );
+        }
+    }
+    let packages = required_packages;
 
     let sbom_dump = match nix2sbom::sbom::Format::CycloneDX
         .dump(&nix2sbom::sbom::SerializationFormat::JSON, &package_graph)

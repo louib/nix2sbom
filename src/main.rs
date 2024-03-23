@@ -86,8 +86,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");
-    let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
-    // let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
+    // let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
     log::info!("{} nodes in the package graph", package_graph.nodes.len());
     log::info!(
         "{} root nodes in the package graph",
