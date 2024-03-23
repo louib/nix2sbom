@@ -9,17 +9,9 @@ extern crate clap;
 
 use clap::Parser;
 
-mod consts;
-mod cyclone_dx;
-mod errors;
-mod logger;
-mod nix;
-mod sbom;
-mod utils;
-
 /// nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation
 #[derive(Parser)]
-#[clap(name = crate::consts::PROJECT_NAME)]
+#[clap(name = nix2sbom::consts::PROJECT_NAME)]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 #[clap(about = "nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation", long_about = None)]
 struct NixToSBOM {
@@ -52,22 +44,22 @@ struct NixToSBOM {
 }
 
 fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
-    logger::init();
+    nix2sbom::logger::init();
     let args = NixToSBOM::parse();
 
     let output_format = match args.format {
-        Some(f) => match crate::sbom::Format::from_string(&f) {
+        Some(f) => match nix2sbom::sbom::Format::from_string(&f) {
             Some(f) => f,
             None => {
                 eprintln!("Invalid format {}", &f);
                 return Ok(std::process::ExitCode::FAILURE);
             }
         },
-        None => crate::sbom::Format::default(),
+        None => nix2sbom::sbom::Format::default(),
     };
 
     let serialization_format = match args.serialization_format {
-        Some(f) => match crate::sbom::SerializationFormat::from_string(&f) {
+        Some(f) => match nix2sbom::sbom::SerializationFormat::from_string(&f) {
             Some(f) => f,
             None => {
                 eprintln!("Invalid serialization format {}", &f);
@@ -77,25 +69,25 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         None => output_format.get_default_serialization_format(),
     };
 
-    let mut derivations: crate::nix::Derivations = crate::nix::Derivations::default();
+    let mut derivations: nix2sbom::nix::Derivations = nix2sbom::nix::Derivations::default();
     if let Some(file_path) = args.file_path {
         log::info!("Getting the derivations from {}", &file_path);
-        derivations = nix::Derivation::get_derivations(&file_path)?;
+        derivations = nix2sbom::nix::Derivation::get_derivations(&file_path)?;
     } else if args.current_system {
         log::info!("Getting the derivations from the current system");
-        derivations = nix::Derivation::get_derivations_for_current_system()?;
+        derivations = nix2sbom::nix::Derivation::get_derivations_for_current_system()?;
     } else {
         eprintln!("Error: Must provide a file or use the --curent-system argument");
         return Ok(std::process::ExitCode::FAILURE);
     }
     log::info!("Found {} derivations", derivations.len());
 
-    let packages = crate::nix::get_packages(args.metadata_path, args.no_meta)?;
+    let packages = nix2sbom::nix::get_packages(args.metadata_path, args.no_meta)?;
     log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");
-    let package_graph = crate::nix::get_package_graph(&derivations, &packages);
-    // let package_graph = crate::nix::get_package_graph_next(&derivations, &packages);
+    let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    // let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
     log::info!("{} nodes in the package graph", package_graph.nodes.len());
     log::info!(
         "{} root nodes in the package graph",
