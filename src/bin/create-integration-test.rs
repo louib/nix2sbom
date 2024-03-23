@@ -67,7 +67,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     let package_graph_file_path = format!("{}/package-graph.json", target_dir);
     let package_graph_stats_file_path = format!("{}/package-graph-stats.json", target_dir);
     let derivations_file_path = format!("{}/derivations.json", target_dir);
-    let sbom_file_path = format!("{}/sbom.json", target_dir);
+    // FIXME the sbom file is not deterministic yet, so we can't us it for the integration tests.
+    // let sbom_file_path = format!("{}/sbom.json", target_dir);
 
     let mut packages_file = File::create(packages_file_path)?;
     packages_file.write_all(serde_json::to_string_pretty(&packages).unwrap().as_bytes());
@@ -85,8 +86,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
             .as_bytes(),
     );
 
-    let mut sbom_file = File::create(sbom_file_path)?;
-    sbom_file.write_all(sbom_dump.as_bytes());
+    // let mut sbom_file = File::create(sbom_file_path)?;
+    // sbom_file.write_all(sbom_dump.as_bytes());
 
     Ok(std::process::ExitCode::SUCCESS)
 }

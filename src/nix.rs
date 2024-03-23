@@ -250,7 +250,7 @@ impl Derivation {
         self.env.get("src")
     }
 
-    // Returns the store path of the stdenv used.
+    // Returns the main url of the derivation
     pub fn get_url(&self) -> Option<String> {
         if let Some(url) = self.env.get("url") {
             return Some(url.to_owned());
@@ -915,6 +915,9 @@ pub struct PackageGraphStats {
     pub root_nodes_count: usize,
 
     pub patches_count: usize,
+
+    /// Number of packages which had an associated entry in the package meta dictionnary.
+    pub package_meta_count: usize,
 }
 
 #[derive(Debug)]

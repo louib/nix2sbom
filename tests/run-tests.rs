@@ -35,10 +35,10 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
     buf_reader.read_to_string(&mut contents).unwrap();
     let package_graph: nix2sbom::nix::PackageGraph = serde_json::from_str(&contents).unwrap();
 
-    let file = File::open(sbom_file_path).unwrap();
-    let mut buf_reader = BufReader::new(file);
-    let mut sbom = String::new();
-    buf_reader.read_to_string(&mut sbom).unwrap();
+    // let file = File::open(sbom_file_path).unwrap();
+    // let mut buf_reader = BufReader::new(file);
+    // let mut sbom = String::new();
+    // buf_reader.read_to_string(&mut sbom).unwrap();
 
     let expected_package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
 
