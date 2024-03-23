@@ -252,18 +252,8 @@ impl Derivation {
 
     // Returns the main url of the derivation
     pub fn get_url(&self) -> Option<String> {
-        if let Some(url) = self.env.get("url") {
-            return Some(url.to_owned());
-        }
-        if let Some(urls) = self.env.get("urls") {
-            // FIXME I'm not sure that this is the right separator!!
-            // FIXME How whould we handle multiple URLs???
-            match urls.split(" ").nth(0) {
-                Some(u) => return Some(u.to_string()),
-                None => return None,
-            }
-        }
-        None
+        let urls = self.get_urls();
+        return urls.get(0).cloned();
     }
 
     // Returns the store path of the stdenv used.
@@ -271,12 +261,12 @@ impl Derivation {
         let mut response: Vec<String> = vec![];
         if let Some(url) = self.env.get("url") {
             for url in url.split(" ").collect::<Vec<_>>() {
-                response.push(url.to_string());
+                response.push(crate::mirrors::translate_url(url));
             }
         }
         if let Some(urls) = self.env.get("urls") {
             for url in urls.split(" ").collect::<Vec<_>>() {
-                response.push(url.to_string());
+                response.push(crate::mirrors::translate_url(url));
             }
         }
         response
