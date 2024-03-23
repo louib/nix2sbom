@@ -663,7 +663,7 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
-    pub fn get_nodes_count(
+    pub fn get_reachable_nodes_count(
         &self,
         package_nodes: &BTreeMap<String, PackageNode>,
         visited_children: &mut HashSet<String>,
@@ -683,7 +683,7 @@ impl PackageNode {
                     continue;
                 }
             };
-            count += child_package.get_nodes_count(package_nodes, visited_children);
+            count += child_package.get_reachable_nodes_count(package_nodes, visited_children);
             visited_children.insert(child_derivation_path.to_string());
         }
         count
@@ -907,7 +907,7 @@ impl PackageGraph {
             let package_node = self.nodes.get(root_node).unwrap();
             package_graph_stats.reachable_nodes_count.insert(
                 root_node.clone(),
-                package_node.get_nodes_count(&self.nodes, &mut visited_children),
+                package_node.get_reachable_nodes_count(&self.nodes, &mut visited_children),
             );
         }
         package_graph_stats
@@ -985,7 +985,7 @@ fn add_visited_children(
 // Small struct to make it easier to pretty-print the
 // internal representation for the package graph.
 #[derive(Debug)]
-struct PrettyPrintLine {
+pub struct PrettyPrintLine {
     pub indent_level: usize,
     pub line: String,
 }
