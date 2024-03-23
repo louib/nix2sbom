@@ -14,6 +14,7 @@ const CURRENT_SYSTEM_PATH: &str = "/run/current-system";
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(Clone)]
+#[derive(PartialEq)]
 pub enum DerivationBuilder {
     FetchURL,
     Bash,
@@ -111,6 +112,7 @@ impl DerivationBuilder {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(Clone)]
+#[derive(PartialEq)]
 pub struct InputDerivationDetails {
     outputs: Vec<String>,
 }
@@ -120,6 +122,7 @@ pub struct InputDerivationDetails {
 #[derive(Serialize)]
 #[derive(Clone)]
 #[serde(untagged)]
+#[derive(PartialEq)]
 pub enum InputDerivation {
     List(Vec<String>),
     Details(InputDerivationDetails),
@@ -129,6 +132,7 @@ pub enum InputDerivation {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(Clone)]
+#[derive(PartialEq)]
 pub struct Derivation {
     pub outputs: HashMap<String, Output>,
 
@@ -358,6 +362,7 @@ impl Derivation {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(Clone)]
+#[derive(PartialEq)]
 pub struct Output {
     path: String,
 }
@@ -448,6 +453,7 @@ impl PackageURL {
 #[derive(Clone)]
 #[derive(Deserialize)]
 #[derive(Serialize)]
+#[derive(PartialEq)]
 pub struct Package {
     // name of the derivation
     pub name: String,
@@ -490,6 +496,7 @@ impl Package {
 #[derive(Clone)]
 #[derive(Deserialize)]
 #[derive(Serialize)]
+#[derive(PartialEq)]
 pub struct PackageMeta {
     pub available: Option<bool>,
 
@@ -557,6 +564,7 @@ pub fn get_package_for_derivation(derivation_name: &str, packages: &Packages) ->
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[serde(untagged)]
+#[derive(PartialEq)]
 pub enum Homepage {
     One(String),
     Many(Vec<String>),
@@ -567,6 +575,7 @@ pub enum Homepage {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[serde(untagged)]
+#[derive(PartialEq)]
 pub enum PackageMaintainers {
     List(Vec<PackageMaintainer>),
     // FIXME this syntax is not officially supported, and the only known instance
@@ -578,6 +587,7 @@ pub enum PackageMaintainers {
 #[derive(Clone)]
 #[derive(Deserialize)]
 #[derive(Serialize)]
+#[derive(PartialEq)]
 pub struct PackageMaintainer {
     pub email: Option<String>,
     pub name: String,
@@ -595,6 +605,7 @@ pub struct PackageMaintainer {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[serde(untagged)]
+#[derive(PartialEq)]
 pub enum License {
     One(PackageLicense),
     Many(Vec<PackageLicense>),
@@ -605,6 +616,7 @@ pub enum License {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[serde(untagged)]
+#[derive(PartialEq)]
 pub enum PackageLicense {
     // This is used for unknown licenses, or to list only the SPDX ID.
     Name(String),
@@ -616,6 +628,7 @@ pub enum PackageLicense {
 #[derive(Clone)]
 #[derive(Deserialize)]
 #[derive(Serialize)]
+#[derive(PartialEq)]
 pub struct LicenseDetails {
     pub free: Option<bool>,
     pub redistributable: Option<bool>,
@@ -634,7 +647,9 @@ pub struct LicenseDetails {
 }
 
 #[derive(Debug)]
+#[derive(PartialEq)]
 #[derive(Serialize)]
+#[derive(Deserialize)]
 pub struct PackageNode {
     pub main_derivation: Derivation,
 
@@ -832,6 +847,9 @@ impl PackageNode {
 
 #[derive(Debug)]
 #[derive(Default)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+#[derive(PartialEq)]
 pub struct PackageGraph {
     pub nodes: BTreeMap<String, PackageNode>,
     pub root_nodes: BTreeSet<String>,

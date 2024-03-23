@@ -3,6 +3,12 @@ name = "nix2sbom"
 version = "0.0.0-placeholder-version"
 edition = "2021"
 
+[lib]
+
+[[bin]]
+name = "create-integration-test"
+test = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -27,3 +33,5 @@ chrono = { version = "0.4.23", default-features = false, features = [
     "std",
 ] }
 
+[dev-dependencies]
+rstest = "0.18.2"

@@ -1,0 +1,2 @@
+This file is only here so that the rtest macro can compile even
+when we delete all the fixtures.
