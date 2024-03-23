@@ -903,12 +903,12 @@ impl PackageGraph {
         package_graph_stats.nodes_count = self.nodes.len();
         package_graph_stats.root_nodes_count = self.root_nodes.len();
         for root_node in &self.root_nodes {
-            package_graph_stats
-                .reachable_nodes_count
-                .insert(root_node.clone(), 0);
             let mut visited_children: HashSet<String> = HashSet::default();
             let package_node = self.nodes.get(root_node).unwrap();
-            let reachable_nodes_count = package_node.get_nodes_count(&self.nodes, &mut visited_children);
+            package_graph_stats.reachable_nodes_count.insert(
+                root_node.clone(),
+                package_node.get_nodes_count(&self.nodes, &mut visited_children),
+            );
         }
         package_graph_stats
     }
