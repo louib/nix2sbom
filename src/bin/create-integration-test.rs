@@ -31,6 +31,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
     // let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
 
+    let package_graph_stats = package_graph.get_stats();
+
     let sbom_dump = match nix2sbom::sbom::Format::CycloneDX
         .dump(&nix2sbom::sbom::SerializationFormat::JSON, &package_graph)
     {
@@ -48,6 +50,7 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     let packages_file_path = format!("{}/packages.json", target_dir);
     let package_graph_file_path = format!("{}/package-graph.json", target_dir);
+    let package_graph_stats_file_path = format!("{}/package-graph-stats.json", target_dir);
     let derivations_file_path = format!("{}/derivations.json", target_dir);
     let sbom_file_path = format!("{}/sbom.json", target_dir);
 
@@ -59,6 +62,13 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     let mut package_graph_file = File::create(package_graph_file_path)?;
     package_graph_file.write_all(serde_json::to_string_pretty(&package_graph).unwrap().as_bytes());
+
+    let mut package_graph_stats_file = File::create(package_graph_stats_file_path)?;
+    package_graph_stats_file.write_all(
+        serde_json::to_string_pretty(&package_graph_stats)
+            .unwrap()
+            .as_bytes(),
+    );
 
     let mut sbom_file = File::create(sbom_file_path)?;
     sbom_file.write_all(sbom_dump.as_bytes());

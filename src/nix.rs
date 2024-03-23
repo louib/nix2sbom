@@ -663,6 +663,32 @@ pub struct PackageNode {
 }
 
 impl PackageNode {
+    pub fn get_nodes_count(
+        &self,
+        package_nodes: &BTreeMap<String, PackageNode>,
+        visited_children: &mut HashSet<String>,
+    ) -> usize {
+        let mut count = 1;
+        for child_derivation_path in &self.children {
+            if visited_children.contains(child_derivation_path) {
+                continue;
+            }
+            let child_package = match package_nodes.get(child_derivation_path) {
+                Some(p) => p,
+                None => {
+                    log::warn!(
+                        "Could not get package in package graph for {}",
+                        &child_derivation_path
+                    );
+                    continue;
+                }
+            };
+            count += child_package.get_nodes_count(package_nodes, visited_children);
+            visited_children.insert(child_derivation_path.to_string());
+        }
+        count
+    }
+
     pub fn get_name(&self) -> Option<String> {
         if let Some(p) = &self.package {
             if p.pname != "source" {
@@ -850,12 +876,43 @@ impl PackageNode {
 #[derive(Serialize)]
 #[derive(Deserialize)]
 #[derive(PartialEq)]
+pub struct PackageGraphStats {
+    pub nodes_count: usize,
+
+    /// Number of nodes that are reachable from the root nodes.
+    pub reachable_nodes_count: BTreeMap<String, usize>,
+
+    pub root_nodes_count: usize,
+
+    pub patches_count: usize,
+}
+
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+#[derive(PartialEq)]
 pub struct PackageGraph {
     pub nodes: BTreeMap<String, PackageNode>,
     pub root_nodes: BTreeSet<String>,
 }
 
 impl PackageGraph {
+    pub fn get_stats(&self) -> PackageGraphStats {
+        let mut package_graph_stats = PackageGraphStats::default();
+        package_graph_stats.nodes_count = self.nodes.len();
+        package_graph_stats.root_nodes_count = self.root_nodes.len();
+        for root_node in &self.root_nodes {
+            package_graph_stats
+                .reachable_nodes_count
+                .insert(root_node.clone(), 0);
+            let mut visited_children: HashSet<String> = HashSet::default();
+            let package_node = self.nodes.get(root_node).unwrap();
+            let reachable_nodes_count = package_node.get_nodes_count(&self.nodes, &mut visited_children);
+        }
+        package_graph_stats
+    }
+
     pub fn print_out_paths(&self) -> String {
         let mut response: String = "".to_string();
         for derivation_path in &self.root_nodes {
