@@ -657,7 +657,7 @@ pub struct PackageNode {
 
     pub sources: Vec<Derivation>,
 
-    pub patches: Vec<Derivation>,
+    pub patches: BTreeSet<String>,
 
     pub children: BTreeSet<String>,
 }
@@ -862,7 +862,8 @@ impl PackageNode {
             }
             if self.patches.len() != 0 {
                 lines.push(PrettyPrintLine::new("patches:", depth + 1));
-                for patch in &self.patches {
+                for patch_path in &self.patches {
+                    let patch = &graph.nodes.get(patch_path).unwrap().main_derivation;
                     for line in patch.pretty_print(depth + 1, display_options) {
                         lines.push(line);
                     }
@@ -1060,7 +1061,7 @@ pub fn get_package_graph(
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
             sources: vec![],
-            patches: vec![],
+            patches: BTreeSet::default(),
         };
         let current_node_patches = derivation.get_patches();
 
@@ -1106,7 +1107,7 @@ pub fn get_package_graph(
                 if child_derivation.env.get("out").is_some()
                     && current_node_patches.contains(child_derivation.env.get("out").unwrap())
                 {
-                    current_node.patches.push(child_derivation.clone());
+                    current_node.patches.insert(child_derivation_path.clone());
                 } else {
                     current_node.sources.push(child_derivation.clone());
                 }
@@ -1134,10 +1135,21 @@ pub fn get_package_graph_next(
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
             sources: vec![],
-            patches: vec![],
+            patches: BTreeSet::default(),
         };
 
+        let current_node_patches = derivation.get_patches();
+
         for input_derivation_path in derivation.input_derivations.keys() {
+            let child_derivation = derivations.get(input_derivation_path).unwrap();
+            if let Some(child_derivation_out_path) = child_derivation.env.get("out") {
+                if current_node_patches.contains(child_derivation_out_path) {
+                    current_node.patches.insert(input_derivation_path.clone());
+                    all_child_derivations.insert(input_derivation_path.clone());
+                    continue;
+                }
+            }
+
             current_node.children.insert(input_derivation_path.to_string());
             all_child_derivations.insert(input_derivation_path.clone());
         }

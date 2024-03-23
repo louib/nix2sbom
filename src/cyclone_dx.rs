@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::time::SystemTime;
 
 use chrono::{DateTime, Utc};
@@ -78,7 +79,7 @@ pub fn dump_package_node(
         return None;
     }
 
-    let mut component = dump_derivation(package_derivation_path, package_node);
+    let mut component = dump_derivation(package_graph, package_derivation_path, package_node);
     let mut sub_components: Vec<Component> = vec![];
     let main_source_path = package_node.main_derivation.get_source_path();
     for child in &package_node.sources {
@@ -117,7 +118,11 @@ pub fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Compon
     None
 }
 
-pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::PackageNode) -> Option<Component> {
+pub fn dump_derivation(
+    package_graph: &crate::nix::PackageGraph,
+    derivation_path: &str,
+    package_node: &crate::nix::PackageNode,
+) -> Option<Component> {
     log::debug!("Dumping derivation for {}", &derivation_path);
     let mut component_builder = ComponentBuilder::default();
 
@@ -153,7 +158,7 @@ pub fn dump_derivation(derivation_path: &str, package_node: &crate::nix::Package
         component_builder.external_references(external_references);
     }
 
-    let commits = get_commits(&package_node.patches);
+    let commits = get_commits(&package_graph, &package_node.patches);
     if commits.len() != 0 {
         let mut pedigree_builder = ComponentPedigreeBuilder::default();
         pedigree_builder.commits(commits);
@@ -192,11 +197,12 @@ fn get_author(package_node: &crate::nix::PackageNode) -> Option<String> {
     None
 }
 
-fn get_commits(patches: &Vec<crate::nix::Derivation>) -> Vec<Commit> {
+fn get_commits(package_graph: &crate::nix::PackageGraph, patches: &BTreeSet<String>) -> Vec<Commit> {
     let mut response: Vec<Commit> = vec![];
     if patches.len() != 0 {
         let mut commits: Vec<Commit> = vec![];
         for patch in patches {
+            let patch = &package_graph.nodes.get(patch).unwrap().main_derivation;
             let mut commit = CommitBuilder::default();
             let commit_url = match patch.get_url() {
                 Some(u) => u,
