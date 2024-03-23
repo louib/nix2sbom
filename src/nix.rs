@@ -689,6 +689,32 @@ impl PackageNode {
         count
     }
 
+    pub fn get_longest_path(
+        &self,
+        name: &str,
+        package_nodes: &BTreeMap<String, PackageNode>,
+        visited_children: &mut HashMap<String, Vec<String>>,
+    ) -> Vec<String> {
+        let mut longest_path = vec![];
+        for child_derivation_path in &self.children {
+            let path = match visited_children.get(child_derivation_path) {
+                Some(p) => p.to_vec(),
+                None => {
+                    let child_package = package_nodes.get(child_derivation_path).unwrap();
+                    child_package.get_longest_path(&child_derivation_path, package_nodes, visited_children)
+                }
+            };
+            if path.len() > longest_path.len() {
+                longest_path = path.to_vec();
+            }
+            visited_children.insert(child_derivation_path.to_string(), path.to_vec());
+        }
+
+        let mut response = vec![name.to_string()];
+        response.append(&mut longest_path);
+        response
+    }
+
     pub fn get_name(&self) -> Option<String> {
         if let Some(p) = &self.package {
             if p.pname != "source" {
@@ -882,6 +908,9 @@ pub struct PackageGraphStats {
     /// Number of nodes that are reachable from the root nodes.
     pub reachable_nodes_count: BTreeMap<String, usize>,
 
+    /// The length of the longest path from the root nodes to a leaf node.
+    pub longest_path_length: BTreeMap<String, usize>,
+
     pub root_nodes_count: usize,
 
     pub patches_count: usize,
@@ -903,12 +932,18 @@ impl PackageGraph {
         package_graph_stats.nodes_count = self.nodes.len();
         package_graph_stats.root_nodes_count = self.root_nodes.len();
         for root_node in &self.root_nodes {
-            let mut visited_children: HashSet<String> = HashSet::default();
             let package_node = self.nodes.get(root_node).unwrap();
             package_graph_stats.reachable_nodes_count.insert(
                 root_node.clone(),
-                package_node.get_reachable_nodes_count(&self.nodes, &mut visited_children),
+                package_node.get_reachable_nodes_count(&self.nodes, &mut HashSet::default()),
             );
+            package_graph_stats.longest_path_length.insert(
+                root_node.clone(),
+                package_node
+                    .get_longest_path(&root_node, &self.nodes, &mut HashMap::default())
+                    .len(),
+            );
+            let longest_path = package_node.get_longest_path(&root_node, &self.nodes, &mut HashMap::default());
         }
         package_graph_stats
     }
