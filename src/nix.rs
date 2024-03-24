@@ -746,6 +746,8 @@ impl PackageNode {
     }
 
     pub fn get_purl(&self) -> PackageURL {
+        let mut package_url = PackageURL::default();
+
         let mut name: Option<String> = self.get_name();
         if let Some(n) = &name {
             log::debug!("Found package name from source: {}", &n);
@@ -764,33 +766,85 @@ impl PackageNode {
         if name == Some("raw".to_string()) {
             log::trace!("{}", self.to_json().unwrap());
         }
+        package_url.host = name.unwrap_or("".to_string());
 
-        let mut version: Option<String> = self.get_version();
-        if version.is_none() {
-            version = self.main_derivation.get_version();
+        package_url.version = self.get_version();
+        if package_url.version.is_none() {
+            package_url.version = self.main_derivation.get_version();
         }
-        if version.is_none() {
+        if package_url.version.is_none() {
             log::trace!("{}", self.to_json().unwrap());
         }
 
         // FIXME this cannot use the nix scope, which does not actually exist.
         // See https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
         // for the accepted scopes.
-        let scheme = "generic";
+        package_url.scheme = "generic".to_string();
+
+        let urls = self.main_derivation.get_urls();
+        let url = match urls.get(0) {
+            Some(u) => u,
+            None => {
+                log::trace!("{}", self.to_json().unwrap());
+                return package_url;
+            }
+        };
+
         // TODO detect the scheme using the url.
+        if url.starts_with("https://crates.io") {
+            package_url.scheme = "cargo".to_string();
+        }
+        if url.starts_with("https://www.cpan.org/") {
+            package_url.scheme = "cpan".to_string();
+        }
+        if url.starts_with("https://rubygems.org") {
+            package_url.scheme = "gem".to_string();
+        }
+        if url.starts_with("https://hackage.haskell.org/") {
+            package_url.scheme = "hackage".to_string();
+        }
+        if url.starts_with("https://repo.maven.apache.org/maven2") {
+            package_url.scheme = "maven".to_string();
+        }
+        if url.starts_with("https://registry.npmjs.org") {
+            package_url.scheme = "npm".to_string();
+        }
+        if url.starts_with("https://www.nuget.org") {
+            package_url.scheme = "nuget".to_string();
+        }
+        if url.starts_with("https://bitbucket.org") {
+            package_url.scheme = "bitbucket".to_string();
+        }
+        if url.starts_with("https://hub.docker.com") {
+            package_url.scheme = "docker".to_string();
+        }
+        if url.starts_with("https://pypi.org") || url.starts_with("https://pypi.python.org") {
+            package_url.scheme = "pypi".to_string();
+        }
+        // if url.starts_with("https://github.com") {
+        //     package_url.scheme = "gem".to_string();
+        // }
         // if url.starts_with("https://crates.io") {}
         // https://crates.io/api/v1/crates/project-name/1.0.2/download
         // if url.starts_with("https://bitbucket.org") {}
         // if url.starts_with("https://registry.npmjs.org") {}
         // if url.starts_with("https://pypi.python.org") {}
         // if url.starts_with("https://github.com") {}
+        // TODO How can we detect go and swift packages? The url will just be another git URL
         // TODO gitlab ??
         // TODO openwrt ??
 
-        let mut package_url = PackageURL::default();
-        package_url.host = name.unwrap_or("".to_string());
-        package_url.version = version;
-        package_url.scheme = scheme.to_string();
+        // According to the PURL doc, for the generic scope:
+        // > There is no default repository. A download_url and checksum may be provided in qualifiers
+        // > or as separate attributes outside of a purl for proper identification and location.
+        // https://github.com/package-url/purl-spec/blob/346589846130317464b677bc4eab30bf5040183a/PURL-TYPES.rst#generic
+        package_url
+            .query_params
+            .insert("download_url".to_string(), url.to_string());
+        // Format should be sha256:de4d501267da...
+        // package_url
+        //     .query_params
+        //     .insert("checksum".to_string(), url.to_string());
         return package_url;
     }
 
