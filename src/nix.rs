@@ -908,6 +908,8 @@ pub struct PackageGraphStats {
 
     /// Number of derivations which had an associated entry in the package meta dictionnary.
     pub package_meta_count: usize,
+
+    pub purl_scope_count: BTreeMap<String, usize>,
 }
 
 #[derive(Debug)]
@@ -937,9 +939,43 @@ impl PackageGraph {
                     .get_longest_path(&root_node, &self.nodes, &mut HashMap::default())
                     .len(),
             );
+            package_graph_stats.purl_scope_count = self.get_purl_scope_stats();
             let longest_path = package_node.get_longest_path(&root_node, &self.nodes, &mut HashMap::default());
         }
         package_graph_stats
+    }
+
+    pub fn get_purl_scope_stats(&self) -> BTreeMap<String, usize> {
+        let mut visited_children: HashSet<String> = HashSet::default();
+
+        let mut response: BTreeMap<String, usize> = BTreeMap::default();
+        let mut node_queue = self.root_nodes.clone();
+
+        while !node_queue.is_empty() {
+            let current_node_path = node_queue.pop_first().unwrap();
+
+            if visited_children.contains(&current_node_path) {
+                continue;
+            }
+
+            let current_node = self.nodes.get(&current_node_path).unwrap();
+            let purl = current_node.get_purl();
+
+            if response.contains_key(&purl.scheme) {
+                let count = response.get_mut(&purl.scheme).unwrap();
+                *count += 1;
+            } else {
+                response.insert(purl.scheme.clone(), 1);
+            }
+
+            // FIXME we should also go through the patches?
+            for current_node_child in &current_node.children {
+                node_queue.insert(current_node_child.clone());
+            }
+            visited_children.insert(current_node_path.clone());
+        }
+
+        response
     }
 
     pub fn print_out_paths(&self) -> String {
