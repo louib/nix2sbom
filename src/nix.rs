@@ -158,6 +158,50 @@ pub struct Derivation {
 pub type Derivations = HashMap<String, Derivation>;
 pub type Packages = HashMap<String, Package>;
 
+pub const NATIVE_BUILD_INPUTS_FIELD_NAME: &str = "nativeBuildInputs";
+pub const PROPAGATED_BUILD_INPUTS_FIELD_NAME: &str = "propagatedBuildInputs";
+pub const PROPAGATED_NATIVE_BUILD_INPUTS_FIELD_NAME: &str = "propagatedNativeBuildInputs";
+
+enum BuildInputType {
+    Native,
+    Propagated,
+    NativeAndPropagated,
+}
+impl BuildInputType {
+    pub fn from_string(env_name: &str) -> Option<BuildInputType> {
+        if env_name == NATIVE_BUILD_INPUTS_FIELD_NAME {
+            return Some(BuildInputType::Native);
+        }
+        if env_name == PROPAGATED_BUILD_INPUTS_FIELD_NAME {
+            return Some(BuildInputType::Propagated);
+        }
+        if env_name == PROPAGATED_NATIVE_BUILD_INPUTS_FIELD_NAME {
+            return Some(BuildInputType::NativeAndPropagated);
+        }
+        None
+    }
+    pub fn get_all() -> Vec<BuildInputType> {
+        vec![
+            BuildInputType::Native,
+            BuildInputType::Propagated,
+            BuildInputType::NativeAndPropagated,
+        ]
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            BuildInputType::Native => NATIVE_BUILD_INPUTS_FIELD_NAME.to_string(),
+            BuildInputType::Propagated => PROPAGATED_BUILD_INPUTS_FIELD_NAME.to_string(),
+            BuildInputType::NativeAndPropagated => PROPAGATED_NATIVE_BUILD_INPUTS_FIELD_NAME.to_string(),
+        }
+    }
+}
+
+pub struct BuildInput {
+    build_input_type: BuildInputType,
+    out_path: String,
+}
+
 impl Derivation {
     pub fn get_derivations_for_current_system() -> Result<Derivations, Box<dyn Error>> {
         Derivation::get_derivations(CURRENT_SYSTEM_PATH)
@@ -274,14 +318,30 @@ impl Derivation {
 
     // Returns the out path of the patches for that derivation
     pub fn get_patches(&self) -> Vec<String> {
-        if let Some(patches) = self.env.get("patches") {
-            let mut response: Vec<String> = vec![];
-            for patch in patches.split(" ") {
-                response.push(patch.to_string());
+        return self.get_space_separated_list("patches");
+    }
+
+    pub fn get_space_separated_list(&self, field_name: &str) -> Vec<String> {
+        match self.env.get(field_name) {
+            Some(field_value) => {
+                let mut response: Vec<String> = vec![];
+                for list_value in field_value.split(" ").filter(|x| !x.trim().is_empty()) {
+                    response.push(list_value.to_string());
+                }
+                return response;
             }
-            return response;
+            None => vec![],
         }
-        vec![]
+    }
+
+    // Returns the native build inputs of the derivation
+    pub fn get_build_inputs(&self) -> Vec<String> {
+        let mut response: Vec<String> = vec![];
+        for build_input_type in BuildInputType::get_all() {
+            let field_name = build_input_type.to_string();
+            response.append(&mut self.get_space_separated_list(&field_name));
+        }
+        response
     }
 
     pub fn pretty_print(&self, depth: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
@@ -648,6 +708,8 @@ pub struct PackageNode {
     pub sources: Vec<Derivation>,
 
     pub patches: BTreeSet<String>,
+
+    pub build_inputs: BTreeSet<String>,
 
     pub children: BTreeSet<String>,
 }
@@ -1145,6 +1207,7 @@ pub fn get_package_graph(
             children: BTreeSet::default(),
             sources: vec![],
             patches: BTreeSet::default(),
+            build_inputs: BTreeSet::default(),
         };
         let current_node_patches = derivation.get_patches();
 
@@ -1219,15 +1282,24 @@ pub fn get_package_graph_next(
             children: BTreeSet::default(),
             sources: vec![],
             patches: BTreeSet::default(),
+            build_inputs: BTreeSet::default(),
         };
 
         let current_node_patches = derivation.get_patches();
+        let current_node_native_build_inputs = derivation.get_build_inputs();
 
         for input_derivation_path in derivation.input_derivations.keys() {
             let child_derivation = derivations.get(input_derivation_path).unwrap();
+
             if let Some(child_derivation_out_path) = child_derivation.env.get("out") {
                 if current_node_patches.contains(child_derivation_out_path) {
                     current_node.patches.insert(input_derivation_path.clone());
+                    all_child_derivations.insert(input_derivation_path.clone());
+                    continue;
+                }
+
+                if current_node_native_build_inputs.contains(child_derivation_out_path) {
+                    current_node.build_inputs.insert(input_derivation_path.clone());
                     all_child_derivations.insert(input_derivation_path.clone());
                     continue;
                 }
