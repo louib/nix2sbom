@@ -42,7 +42,7 @@ rec {
             };
           };
           packages = {
-            default = pkgs.rustPlatform.buildRustPackage rec {
+            default = pkgs.rustPlatform.buildRustPackage {
               pname = projectName;
               version = mainBranch;
 
