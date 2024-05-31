@@ -27,11 +27,11 @@ regex = "1.9"
 
 serde-cyclonedx = "0.8"
 
-chrono = { version = "0.4.23", default-features = false, features = [
+chrono = { version = "0.4", default-features = false, features = [
     "serde",
     "clock",
     "std",
 ] }
 
 [dev-dependencies]
-rstest = "0.18.2"
+rstest = "0.20"
