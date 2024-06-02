@@ -1328,7 +1328,7 @@ mod tests {
 
     #[test]
     pub fn parse_package_metadata() {
-        const package_metadata: &str = r###"
+        let package_metadata: &str = r###"
           {
             "name": "0ad-0.0.26",
             "pname": "0ad",
@@ -1435,7 +1435,7 @@ mod tests {
     #[test]
     pub fn parse_package_metadata_embedded_maintainers_list() {
         // This parsing issue was raised in https://github.com/louib/nix2sbom/issues/10
-        const package_metadata: &str = r###"
+        let package_metadata: &str = r###"
           {
             "meta": {
               "available": true,
@@ -1486,7 +1486,7 @@ mod tests {
 
     #[test]
     pub fn parse_package_metadata_malformed_maintainers() {
-        const package_metadata: &str = r###"
+        let package_metadata: &str = r###"
           {
             "meta": {
               "available": false,
