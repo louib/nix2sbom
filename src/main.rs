@@ -88,12 +88,12 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     // let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
     let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
     log::info!("{} nodes in the package graph", package_graph.nodes.len());
-    log::info!(
+    log::debug!(
         "{} root nodes in the package graph",
         package_graph.root_nodes.len()
     );
 
-    log::info!("Creating the SBOM");
+    log::debug!("Creating the SBOM");
 
     let sbom_dump = match output_format.dump(&serialization_format, &package_graph) {
         Ok(d) => d,
