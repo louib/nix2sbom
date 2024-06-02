@@ -158,17 +158,22 @@ pub struct Derivation {
 pub type Derivations = HashMap<String, Derivation>;
 pub type Packages = HashMap<String, Package>;
 
+pub const BUILD_INPUTS_FIELD_NAME: &str = "buildInputs";
 pub const NATIVE_BUILD_INPUTS_FIELD_NAME: &str = "nativeBuildInputs";
 pub const PROPAGATED_BUILD_INPUTS_FIELD_NAME: &str = "propagatedBuildInputs";
 pub const PROPAGATED_NATIVE_BUILD_INPUTS_FIELD_NAME: &str = "propagatedNativeBuildInputs";
 
 enum BuildInputType {
+    Standard,
     Native,
     Propagated,
     NativeAndPropagated,
 }
 impl BuildInputType {
     pub fn from_string(env_name: &str) -> Option<BuildInputType> {
+        if env_name == BUILD_INPUTS_FIELD_NAME {
+            return Some(BuildInputType::Standard);
+        }
         if env_name == NATIVE_BUILD_INPUTS_FIELD_NAME {
             return Some(BuildInputType::Native);
         }
@@ -182,6 +187,7 @@ impl BuildInputType {
     }
     pub fn get_all() -> Vec<BuildInputType> {
         vec![
+            BuildInputType::Standard,
             BuildInputType::Native,
             BuildInputType::Propagated,
             BuildInputType::NativeAndPropagated,
@@ -190,16 +196,12 @@ impl BuildInputType {
 
     pub fn to_string(&self) -> String {
         match self {
+            BuildInputType::Standard => BUILD_INPUTS_FIELD_NAME.to_string(),
             BuildInputType::Native => NATIVE_BUILD_INPUTS_FIELD_NAME.to_string(),
             BuildInputType::Propagated => PROPAGATED_BUILD_INPUTS_FIELD_NAME.to_string(),
             BuildInputType::NativeAndPropagated => PROPAGATED_NATIVE_BUILD_INPUTS_FIELD_NAME.to_string(),
         }
     }
-}
-
-pub struct BuildInput {
-    build_input_type: BuildInputType,
-    out_path: String,
 }
 
 impl Derivation {
@@ -405,6 +407,14 @@ impl Derivation {
 
     pub fn is_inline_script(&self) -> bool {
         self.env.get("text").is_some()
+    }
+
+    pub fn get_output_paths(&self) -> Vec<String> {
+        let mut response: Vec<String> = vec![];
+        for output in self.outputs.values() {
+            response.push(output.path.clone());
+        }
+        response
     }
 }
 
@@ -1290,23 +1300,28 @@ pub fn get_package_graph_next(
 
         for input_derivation_path in derivation.input_derivations.keys() {
             let child_derivation = derivations.get(input_derivation_path).unwrap();
+            let mut is_runtime_dep: bool = true;
 
-            if let Some(child_derivation_out_path) = child_derivation.env.get("out") {
+            for child_derivation_out_path in &child_derivation.get_output_paths() {
                 if current_node_patches.contains(child_derivation_out_path) {
                     current_node.patches.insert(input_derivation_path.clone());
                     all_child_derivations.insert(input_derivation_path.clone());
-                    continue;
+                    is_runtime_dep = false;
+                    break;
                 }
 
                 if current_node_build_inputs.contains(child_derivation_out_path) {
                     current_node.build_inputs.insert(input_derivation_path.clone());
                     all_child_derivations.insert(input_derivation_path.clone());
-                    continue;
+                    is_runtime_dep = false;
+                    break;
                 }
             }
 
-            current_node.children.insert(input_derivation_path.to_string());
-            all_child_derivations.insert(input_derivation_path.clone());
+            if is_runtime_dep {
+                current_node.children.insert(input_derivation_path.clone());
+                all_child_derivations.insert(input_derivation_path.clone());
+            }
         }
 
         response.nodes.insert(derivation_path.clone(), current_node);
