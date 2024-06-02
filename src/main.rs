@@ -4,7 +4,6 @@
 // the lint check attributes, path, and no_implicit_prelude.
 // Modules also accept macro attributes.
 
-#[macro_use]
 extern crate clap;
 
 use clap::Parser;

@@ -2,12 +2,11 @@ use std::collections::BTreeSet;
 use std::time::SystemTime;
 
 use chrono::{DateTime, Utc};
-use serde::{de::Deserialize, ser::Serialize};
 
 use serde_cyclonedx::cyclonedx::v_1_4::{
-    Commit, CommitBuilder, Component, ComponentBuilder, ComponentPedigree, ComponentPedigreeBuilder,
-    CycloneDxBuilder, Dependency, DependencyBuilder, ExternalReference, ExternalReferenceBuilder, License,
-    LicenseBuilder, LicenseChoice, Metadata, ToolBuilder,
+    Commit, CommitBuilder, Component, ComponentBuilder, ComponentPedigreeBuilder, CycloneDxBuilder, Dependency,
+    DependencyBuilder, ExternalReference, ExternalReferenceBuilder, LicenseBuilder, LicenseChoice, Metadata,
+    ToolBuilder,
 };
 
 const CURRENT_SPEC_VERSION: &str = "1.4";
@@ -79,7 +78,7 @@ pub fn dump_package_node(
         return None;
     }
 
-    let mut component = dump_derivation(package_graph, package_derivation_path, package_node);
+    let component = dump_derivation(package_graph, package_derivation_path, package_node);
     let mut sub_components: Vec<Component> = vec![];
     let main_source_path = package_node.main_derivation.get_source_path();
     for child in &package_node.sources {
@@ -153,7 +152,7 @@ pub fn dump_derivation(
         component_builder.author(author);
     }
 
-    let mut external_references: Vec<ExternalReference> = get_external_references(&package_node);
+    let external_references: Vec<ExternalReference> = get_external_references(&package_node);
     if external_references.len() != 0 {
         component_builder.external_references(external_references);
     }
@@ -198,7 +197,7 @@ fn get_author(package_node: &crate::nix::PackageNode) -> Option<String> {
 }
 
 fn get_commits(package_graph: &crate::nix::PackageGraph, patches: &BTreeSet<String>) -> Vec<Commit> {
-    let mut response: Vec<Commit> = vec![];
+    let response: Vec<Commit> = vec![];
     if patches.len() != 0 {
         let mut commits: Vec<Commit> = vec![];
         for patch in patches {

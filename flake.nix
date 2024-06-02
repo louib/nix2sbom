@@ -35,12 +35,13 @@ rec {
         in {
           devShells = {
             default = pkgs.mkShell {
-              buildInputs = cargoPackages ++ [pkgs.glibc.static];
+              # nativeBuildInputs = cargoPackages ++ [pkgs.glibc.static pkgs.pkg-config];
+              buildInputs = cargoPackages;
 
               shellHook = ''
                 # Even with that flag, the target has to be passed explicitly when building:
                 # cargo build --release --target x86_64-unknown-linux-gnu
-                export RUSTFLAGS='-C target-feature=+crt-static'
+                # export RUSTFLAGS='-C target-feature=+crt-static'
               '';
             };
           };

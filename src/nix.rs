@@ -344,7 +344,7 @@ impl Derivation {
         response
     }
 
-    pub fn pretty_print(&self, depth: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, depth: usize, _display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         for url in self.get_urls() {
             response.push(PrettyPrintLine::new(url, depth + 1));
@@ -417,16 +417,17 @@ pub struct Output {
     path: String,
 }
 
-pub fn get_dependencies(path: &str) -> Vec<String> {
-    // TODO nix-store -qR /an/executable/path
-    vec![]
-}
+// pub fn get_dependencies(path: &str) -> Vec<String> {
+//     // TODO nix-store -qR /an/executable/path
+//     vec![]
+// }
 
 // Get the derivation path associated with a store object
-pub fn get_derivation_path(store_path: &str) -> String {
-    // TODO nix-store -qd store_path
-    "".to_string()
-}
+// pub fn get_derivation_path(store_path: &str) -> String {
+//     // TODO nix-store -qd store_path
+//     "".to_string()
+// }
+
 pub fn get_packages(metadata_path: Option<String>, no_meta: bool) -> Result<Packages, String> {
     let mut packages: Packages = Packages::default();
 
@@ -434,10 +435,9 @@ pub fn get_packages(metadata_path: Option<String>, no_meta: bool) -> Result<Pack
         return Ok(packages);
     }
 
-    let mut content: Vec<u8> = vec![];
-    if let Some(path) = metadata_path {
+    let content: Vec<u8> = if let Some(path) = metadata_path {
         log::info!("Using the package metadata from {}", &path);
-        content = fs::read(path).map_err(|e| e.to_string())?;
+        fs::read(path).map_err(|e| e.to_string())?
     } else {
         log::info!("Getting the metadata for packages in the Nix store");
         // There is currently no way with Nix to generate the meta information
@@ -452,8 +452,8 @@ pub fn get_packages(metadata_path: Option<String>, no_meta: bool) -> Result<Pack
             .arg(".*")
             .output()
             .map_err(|e| e.to_string())?;
-        content = output.stdout;
-    }
+        output.stdout
+    };
 
     let raw_packages: Packages = serde_json::from_slice(&content).map_err(|e| e.to_string())?;
 
@@ -487,7 +487,7 @@ impl PackageURL {
         let mut response = format!("{}://", self.scheme);
         response += &self.host.clone();
 
-        let mut full_path = self.path.join("/");
+        let full_path = self.path.join("/");
         if !full_path.is_empty() {
             response += &full_path;
         }
@@ -524,7 +524,7 @@ pub struct Package {
     pub meta: PackageMeta,
 }
 impl Package {
-    pub fn pretty_print(&self, depth: usize, display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
+    pub fn pretty_print(&self, depth: usize, _display_options: &DisplayOptions) -> Vec<PrettyPrintLine> {
         let mut response: Vec<PrettyPrintLine> = vec![];
         if self.meta.broken.unwrap_or(false) {
             response.push(PrettyPrintLine::new("broken: true", depth + 1));
@@ -911,7 +911,7 @@ impl PackageNode {
     }
 
     pub fn to_json(&self) -> Result<String, String> {
-        return serde_json::to_string_pretty(self.clone()).map_err(|e| e.to_string());
+        return serde_json::to_string_pretty(self).map_err(|e| e.to_string());
     }
 
     pub fn print_out_paths(&self, package_graph: &PackageGraph, depth: usize) -> String {
@@ -1097,7 +1097,6 @@ impl PackageGraph {
     pub fn print_out_paths(&self) -> String {
         let mut response: String = "".to_string();
         for derivation_path in &self.root_nodes {
-            let child_derivation = self.nodes.get(derivation_path).unwrap();
             let out_path = "  ".repeat(0) + &derivation_path + "\n";
             response += &out_path;
             let child_derivation = self.nodes.get(derivation_path).unwrap();
@@ -1116,12 +1115,12 @@ impl PackageGraph {
                 continue;
             }
             for child_derivation_path in &package_node.children {
-                let child = self.nodes.get(child_derivation_path).unwrap().clone();
+                let child = self.nodes.get(child_derivation_path).unwrap();
                 add_visited_children(child, &self, &mut visited_children);
             }
         }
 
-        for (derivation_path, package_node) in &self.nodes {
+        for (_derivation_path, package_node) in &self.nodes {
             if !display_options.print_stdenv && is_stdenv(&package_node.main_derivation.get_name().unwrap()) {
                 continue;
             }
@@ -1270,7 +1269,7 @@ pub fn get_package_graph(
 
 pub fn get_package_graph_next(
     derivations: &crate::nix::Derivations,
-    packages: &crate::nix::Packages,
+    _packages: &crate::nix::Packages,
 ) -> PackageGraph {
     let mut response = PackageGraph::default();
 
@@ -1312,7 +1311,7 @@ pub fn get_package_graph_next(
         response.nodes.insert(derivation_path.clone(), current_node);
     }
 
-    for (derivation_path, derivation) in derivations.iter() {
+    for (derivation_path, _derivation) in derivations.iter() {
         if all_child_derivations.contains(derivation_path) {
             continue;
         }
