@@ -1018,6 +1018,9 @@ pub struct PackageGraphStats {
     /// The length of the longest path from the root nodes to a leaf node.
     pub longest_path_length: BTreeMap<String, usize>,
 
+    /// The longest path from the root nodes to a leaf node.
+    pub longest_path: Vec<String>,
+
     pub root_nodes_count: usize,
 
     pub patches_count: usize,
@@ -1049,14 +1052,12 @@ impl PackageGraph {
                 root_node.clone(),
                 package_node.get_reachable_nodes_count(&self.nodes, &mut HashSet::default()),
             );
-            package_graph_stats.longest_path_length.insert(
-                root_node.clone(),
-                package_node
-                    .get_longest_path(&root_node, &self.nodes, &mut HashMap::default())
-                    .len(),
-            );
-            package_graph_stats.purl_scope_count = self.get_purl_scope_stats();
             let longest_path = package_node.get_longest_path(&root_node, &self.nodes, &mut HashMap::default());
+            package_graph_stats
+                .longest_path_length
+                .insert(root_node.clone(), longest_path.len());
+            package_graph_stats.longest_path = longest_path;
+            package_graph_stats.purl_scope_count = self.get_purl_scope_stats();
         }
         package_graph_stats
     }
