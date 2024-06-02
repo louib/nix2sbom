@@ -37,6 +37,10 @@ struct NixToSBOM {
     #[clap(long, short)]
     no_meta: bool,
 
+    /// Include only the runtime dependencies in the SBOM.
+    #[clap(long, short)]
+    runtime_only: bool,
+
     /// Generate a SBOM for the current system.
     #[clap(long, short)]
     current_system: bool,

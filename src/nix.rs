@@ -1286,7 +1286,7 @@ pub fn get_package_graph_next(
         };
 
         let current_node_patches = derivation.get_patches();
-        let current_node_native_build_inputs = derivation.get_build_inputs();
+        let current_node_build_inputs = derivation.get_build_inputs();
 
         for input_derivation_path in derivation.input_derivations.keys() {
             let child_derivation = derivations.get(input_derivation_path).unwrap();
@@ -1298,7 +1298,7 @@ pub fn get_package_graph_next(
                     continue;
                 }
 
-                if current_node_native_build_inputs.contains(child_derivation_out_path) {
+                if current_node_build_inputs.contains(child_derivation_out_path) {
                     current_node.build_inputs.insert(input_derivation_path.clone());
                     all_child_derivations.insert(input_derivation_path.clone());
                     continue;
