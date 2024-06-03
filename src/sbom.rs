@@ -83,7 +83,7 @@ impl Format {
                 return Ok(package_graph.print_out_paths());
             }
             crate::sbom::Format::Stats => {
-                return Ok(serde_json::to_string_pretty(&package_graph.get_stats())?);
+                return Ok(serde_json::to_string_pretty(&package_graph.get_stats(options))?);
             }
         }
     }

@@ -28,7 +28,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     // let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
     let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
 
-    let package_graph_stats = package_graph.get_stats();
+    let dump_options = nix2sbom::nix::DumpOptions::default();
+
+    let package_graph_stats = package_graph.get_stats(&dump_options);
 
     let mut required_packages = nix2sbom::nix::Packages::default();
     for (_derivation_path, derivation) in derivations.iter() {
@@ -48,7 +50,7 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     let _sbom_dump = match nix2sbom::sbom::Format::CycloneDX.dump(
         &nix2sbom::sbom::SerializationFormat::JSON,
         &package_graph,
-        &nix2sbom::nix::DumpOptions::default(),
+        &dump_options,
     ) {
         Ok(d) => d,
         Err(e) => {

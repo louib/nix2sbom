@@ -764,14 +764,26 @@ impl PackageNode {
         name: &str,
         package_nodes: &BTreeMap<String, PackageNode>,
         visited_children: &mut HashMap<String, Vec<String>>,
+        dump_options: &DumpOptions,
     ) -> Vec<String> {
         let mut longest_path = vec![];
-        for child_derivation_path in &self.children {
+        let mut children = self.children.clone();
+        if !dump_options.runtime_only {
+            for build_input in &self.build_inputs {
+                children.insert(build_input.to_string());
+            }
+        }
+        for child_derivation_path in &children {
             let path = match visited_children.get(child_derivation_path) {
                 Some(p) => p.to_vec(),
                 None => {
                     let child_package = package_nodes.get(child_derivation_path).unwrap();
-                    child_package.get_longest_path(&child_derivation_path, package_nodes, visited_children)
+                    child_package.get_longest_path(
+                        &child_derivation_path,
+                        package_nodes,
+                        visited_children,
+                        dump_options,
+                    )
                 }
             };
             if path.len() > longest_path.len() {
@@ -1060,7 +1072,7 @@ pub struct PackageGraph {
 }
 
 impl PackageGraph {
-    pub fn get_stats(&self) -> PackageGraphStats {
+    pub fn get_stats(&self, options: &DumpOptions) -> PackageGraphStats {
         let mut package_graph_stats = PackageGraphStats::default();
         package_graph_stats.nodes_count = self.nodes.len();
         package_graph_stats.root_nodes_count = self.root_nodes.len();
@@ -1070,7 +1082,8 @@ impl PackageGraph {
                 root_node.clone(),
                 package_node.get_reachable_nodes_count(&self.nodes, &mut HashSet::default()),
             );
-            let longest_path = package_node.get_longest_path(&root_node, &self.nodes, &mut HashMap::default());
+            let longest_path =
+                package_node.get_longest_path(&root_node, &self.nodes, &mut HashMap::default(), options);
             package_graph_stats
                 .longest_path_length
                 .insert(root_node.clone(), longest_path.len());
