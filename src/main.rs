@@ -72,17 +72,16 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         None => output_format.get_default_serialization_format(),
     };
 
-    let mut derivations: nix2sbom::nix::Derivations = nix2sbom::nix::Derivations::default();
-    if let Some(file_path) = args.file_path {
+    let derivations: nix2sbom::nix::Derivations = if let Some(file_path) = args.file_path {
         log::info!("Getting the derivations from {}", &file_path);
-        derivations = nix2sbom::nix::Derivation::get_derivations(&file_path)?;
+        nix2sbom::nix::Derivation::get_derivations(&file_path)?
     } else if args.current_system {
         log::info!("Getting the derivations from the current system");
-        derivations = nix2sbom::nix::Derivation::get_derivations_for_current_system()?;
+        nix2sbom::nix::Derivation::get_derivations_for_current_system()?
     } else {
         eprintln!("Error: Must provide a file or use the --curent-system argument");
         return Ok(std::process::ExitCode::FAILURE);
-    }
+    };
     log::info!("Found {} derivations", derivations.len());
 
     let packages = nix2sbom::nix::get_packages(args.metadata_path, args.no_meta)?;
@@ -99,7 +98,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     log::debug!("Creating the SBOM");
 
-    let dump_options = nix2sbom::nix::DumpOptions::default();
+    let mut dump_options = nix2sbom::nix::DumpOptions::default();
+    dump_options.runtime_only = args.runtime_only;
+
     let sbom_dump = match output_format.dump(&serialization_format, &package_graph, &dump_options) {
         Ok(d) => d,
         Err(e) => {

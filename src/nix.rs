@@ -177,6 +177,7 @@ enum BuildInputType {
     NativeAndPropagated,
 }
 impl BuildInputType {
+    #[allow(dead_code)]
     pub fn from_string(env_name: &str) -> Option<BuildInputType> {
         if env_name == BUILD_INPUTS_FIELD_NAME {
             return Some(BuildInputType::Standard);

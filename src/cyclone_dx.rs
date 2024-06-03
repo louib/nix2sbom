@@ -46,6 +46,11 @@ pub fn dump(
         for child in package.children.iter() {
             depends_on.push(child.to_string());
         }
+        if !options.runtime_only {
+            for build_input in package.build_inputs.iter() {
+                depends_on.push(build_input.to_string());
+            }
+        }
         dependency_builder.depends_on(depends_on);
         dependencies.push(dependency_builder.build().unwrap());
     }
