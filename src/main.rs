@@ -99,7 +99,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     log::debug!("Creating the SBOM");
 
-    let sbom_dump = match output_format.dump(&serialization_format, &package_graph) {
+    let dump_options = nix2sbom::nix::DumpOptions::default();
+    let sbom_dump = match output_format.dump(&serialization_format, &package_graph, &dump_options) {
         Ok(d) => d,
         Err(e) => {
             eprintln!("{}", e.to_string());

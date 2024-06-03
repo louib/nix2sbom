@@ -57,10 +57,11 @@ impl Format {
         &self,
         serialization_format: &SerializationFormat,
         package_graph: &crate::nix::PackageGraph,
+        options: &crate::nix::DumpOptions,
     ) -> Result<String, Box<dyn std::error::Error>> {
         match self {
             crate::sbom::Format::CycloneDX => {
-                return match crate::cyclone_dx::dump(&package_graph, &serialization_format) {
+                return match crate::cyclone_dx::dump(&package_graph, &serialization_format, options) {
                     Ok(d) => Ok(d),
                     Err(s) => Err(Box::new(crate::errors::Error::UnknownError(s))),
                 };

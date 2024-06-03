@@ -14,6 +14,7 @@ const CURRENT_SPEC_VERSION: &str = "1.4";
 pub fn dump(
     package_graph: &crate::nix::PackageGraph,
     format: &crate::sbom::SerializationFormat,
+    options: &crate::nix::DumpOptions,
 ) -> Result<String, String> {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();

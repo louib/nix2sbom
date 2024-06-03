@@ -45,9 +45,11 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     }
     let packages = required_packages;
 
-    let _sbom_dump = match nix2sbom::sbom::Format::CycloneDX
-        .dump(&nix2sbom::sbom::SerializationFormat::JSON, &package_graph)
-    {
+    let _sbom_dump = match nix2sbom::sbom::Format::CycloneDX.dump(
+        &nix2sbom::sbom::SerializationFormat::JSON,
+        &package_graph,
+        &nix2sbom::nix::DumpOptions::default(),
+    ) {
         Ok(d) => d,
         Err(e) => {
             eprintln!("{}", e.to_string());

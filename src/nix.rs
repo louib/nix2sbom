@@ -32,6 +32,13 @@ pub struct DisplayOptions {
     pub max_depth: Option<usize>,
 }
 
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Default)]
+pub struct DumpOptions {
+    pub runtime_only: bool,
+}
+
 pub enum PackageScope {
     PERL,
     PYTHON,
