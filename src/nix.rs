@@ -588,6 +588,15 @@ impl PackageMeta {
     pub fn get_maintainers(&self) -> Vec<PackageMaintainer> {
         match &self.maintainers {
             Some(h) => match h {
+                PackageMaintainers::StringList(maintainer_names) => {
+                    let mut maintainers: Vec<PackageMaintainer> = vec![];
+                    for maintainer_name in maintainer_names {
+                        let mut maintainer = PackageMaintainer::default();
+                        maintainer.name = maintainer_name.to_string();
+                        maintainers.push(maintainer);
+                    }
+                    return maintainers;
+                }
                 PackageMaintainers::List(maintainers) => maintainers.clone(),
                 PackageMaintainers::EmbeddedList(lists) => {
                     let mut maintainers: Vec<PackageMaintainer> = vec![];
@@ -600,6 +609,7 @@ impl PackageMeta {
             None => vec![],
         }
     }
+
     pub fn get_licenses(&self) -> Vec<PackageLicense> {
         match &self.license {
             Some(h) => match h {
@@ -649,9 +659,11 @@ pub enum PackageMaintainers {
     // FIXME this syntax is not officially supported, and the only known instance
     // was fixed here https://github.com/NixOS/nixpkgs/commit/f14b6f553a7721b963cf10048adf35d08d5d0253
     EmbeddedList(Vec<Vec<PackageMaintainer>>),
+    StringList(Vec<String>),
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 #[derive(Clone)]
 #[derive(Deserialize)]
 #[derive(Serialize)]
@@ -1518,6 +1530,54 @@ mod tests {
         let package: Package = serde_json::from_str(package_metadata).unwrap();
         assert_eq!(package.name, "javacc-7.0.10");
         assert_eq!(package.meta.get_maintainers().len(), 1);
+    }
+
+    #[test]
+    pub fn parse_package_metadata_maintainer_names() {
+        let package_metadata: &str = r###"
+          {
+            "meta": {
+              "available": true,
+              "broken": false,
+              "description": "A software reverse engineering (SRE) suite of tools developed by NSA's Research Directorate in support of the Cybersecurity mission",
+              "homepage": "https://ghidra-sre.org/",
+              "insecure": false,
+              "license": {
+                "deprecated": false,
+                "free": true,
+                "fullName": "Apache License 2.0",
+                "redistributable": true,
+                "shortName": "asl20",
+                "spdxId": "Apache-2.0",
+                "url": "https://spdx.org/licenses/Apache-2.0.html"
+              },
+              "maintainers": [
+                "roblabla"
+              ],
+              "name": "ghidra-10.1.2",
+              "outputsToInstall": [
+                "out"
+              ],
+              "platforms": [
+                "x86_64-linux",
+                "x86_64-darwin"
+              ],
+              "position": "/nix/store/3nyf6ydmhggdskci66mv0vlyfwwinx0l-nixos/nixos/pkgs/tools/security/ghidra/build.nix:171",
+              "unfree": false,
+              "unsupported": false
+            },
+            "name": "ghidra-10.1.2",
+            "outputName": "out",
+            "outputs": {
+              "out": null
+            },
+            "pname": "ghidra",
+            "system": "x86_64-linux",
+            "version": "10.1.2"
+          }
+        "###;
+        let package: Package = serde_json::from_str(package_metadata).unwrap();
+        assert_eq!(package.name, "ghidra-10.1.2");
     }
 
     #[test]

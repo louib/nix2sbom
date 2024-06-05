@@ -1,5 +1,4 @@
 use rstest::*;
-use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;

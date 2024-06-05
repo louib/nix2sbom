@@ -79,8 +79,6 @@ pub fn translate_url(url: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     pub fn test_translate_mirror_url() {
         let url = crate::mirrors::translate_url("https://github.com/sass/libsass/archive/3.6.4.tar.gz");

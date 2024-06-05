@@ -268,8 +268,6 @@ pub fn get_project_name_from_archive_url(archive_url: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     pub fn test_get_git_url_from_generic_url() {
         let git_url =
