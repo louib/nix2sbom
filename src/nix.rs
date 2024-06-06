@@ -668,6 +668,19 @@ pub enum PackageMaintainers {
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[derive(PartialEq)]
+pub struct GpgKey {
+    pub fingerprint: String,
+
+    #[serde(rename = "longkeyid")]
+    pub long_key_id: Option<String>,
+}
+
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(Clone)]
+#[derive(Deserialize)]
+#[derive(Serialize)]
+#[derive(PartialEq)]
 pub struct PackageMaintainer {
     pub email: Option<String>,
     pub name: String,
@@ -677,7 +690,10 @@ pub struct PackageMaintainer {
 
     #[serde(rename = "githubId")]
     pub github_id: Option<u64>,
-    // TODO also support GPG keys
+
+    pub matrix: Option<String>,
+
+    pub keys: Option<Vec<GpgKey>>,
 }
 
 #[derive(Debug)]
@@ -1446,6 +1462,23 @@ mod tests {
                   "githubId": 42220376,
                   "matrix": "@charlotte:vanpetegem.me",
                   "name": "Charlotte Van Petegem"
+                },
+                {
+                  "email": "dev.primeos@gmail.com",
+                  "github": "primeos",
+                  "githubId": 7537109,
+                  "keys": [
+                    {
+                      "fingerprint": "86A7 4A55 07D0 58D1 322E  37FD 1308 26A6 C2A3 89FD",
+                      "longkeyid": "ed25519/0x130826A6C2A389FD"
+                    },
+                    {
+                      "fingerprint": "AF85 991C C950 49A2 4205  1933 BCA9 943D D1DF 4C04",
+                      "longkeyid": "rsa3072/0xBCA9943DD1DF4C04"
+                    }
+                  ],
+                  "matrix": "@primeos:matrix.org",
+                  "name": "Michael Weiss"
                 }
               ],
               "name": "0ad-0.0.26",
