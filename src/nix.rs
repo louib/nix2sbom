@@ -586,28 +586,34 @@ pub struct PackageMeta {
 }
 impl PackageMeta {
     pub fn get_maintainers(&self) -> Vec<PackageMaintainer> {
-        match &self.maintainers {
-            Some(h) => match h {
-                PackageMaintainers::StringList(maintainer_names) => {
-                    let mut maintainers: Vec<PackageMaintainer> = vec![];
-                    for maintainer_name in maintainer_names {
-                        let mut maintainer = PackageMaintainer::default();
-                        maintainer.name = maintainer_name.to_string();
-                        maintainers.push(maintainer);
-                    }
-                    return maintainers;
+        let mut response: Vec<PackageMaintainer> = vec![];
+        let maintainers = match &self.maintainers {
+            Some(m) => m,
+            None => return response,
+        };
+        for maintainer in maintainers {
+            match maintainer {
+                PackageManagerItem::String(maintainer_name) => {
+                    let mut maintainer = PackageMaintainer::default();
+                    maintainer.name = maintainer_name.to_string();
+                    response.push(maintainer);
                 }
-                PackageMaintainers::List(maintainers) => maintainers.clone(),
-                PackageMaintainers::EmbeddedList(lists) => {
+                PackageManagerItem::Details(maintainer) => {
+                    response.push(maintainer.clone());
+                }
+                PackageManagerItem::List(list) => {
+                    response.append(&mut list.clone());
+                }
+                PackageManagerItem::EmbeddedList(lists) => {
                     let mut maintainers: Vec<PackageMaintainer> = vec![];
                     for list in lists {
                         maintainers.append(&mut list.clone());
                     }
                     return maintainers;
                 }
-            },
-            None => vec![],
+            };
         }
+        return response;
     }
 
     pub fn get_licenses(&self) -> Vec<PackageLicense> {
@@ -648,18 +654,19 @@ pub enum Homepage {
     Many(Vec<String>),
 }
 
+pub type PackageMaintainers = Vec<PackageManagerItem>;
+
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Deserialize)]
 #[derive(Serialize)]
 #[serde(untagged)]
 #[derive(PartialEq)]
-pub enum PackageMaintainers {
+pub enum PackageManagerItem {
+    String(String),
+    Details(PackageMaintainer),
     List(Vec<PackageMaintainer>),
-    // FIXME this syntax is not officially supported, and the only known instance
-    // was fixed here https://github.com/NixOS/nixpkgs/commit/f14b6f553a7721b963cf10048adf35d08d5d0253
     EmbeddedList(Vec<Vec<PackageMaintainer>>),
-    StringList(Vec<String>),
 }
 
 #[derive(Debug)]
@@ -1566,7 +1573,7 @@ mod tests {
     }
 
     #[test]
-    pub fn parse_package_metadata_maintainer_names() {
+    pub fn parse_package_metadata_maintainers_mixed() {
         let package_metadata: &str = r###"
           {
             "meta": {
@@ -1585,7 +1592,46 @@ mod tests {
                 "url": "https://spdx.org/licenses/Apache-2.0.html"
               },
               "maintainers": [
-                "roblabla"
+                "roblabla",
+                [
+                    {
+                        "email": "dev.primeos@gmail.com",
+                        "github": "primeos",
+                        "githubId": 7537109,
+                        "keys": [
+                            {
+                                "fingerprint": "86A7 4A55 07D0 58D1 322E  37FD 1308 26A6 C2A3 89FD",
+                                "longkeyid": "ed25519/0x130826A6C2A389FD"
+                            },
+                            {
+                                "fingerprint": "AF85 991C C950 49A2 4205  1933 BCA9 943D D1DF 4C04",
+                                "longkeyid": "rsa3072/0xBCA9943DD1DF4C04"
+                            }
+                        ],
+                        "matrix": "@primeos:matrix.org",
+                        "name": "Michael Weiss"
+                    },
+                    {
+                        "email": "nix@hilhorst.be",
+                        "github": "Synthetica9",
+                        "githubId": 7075751,
+                        "name": "Patrick Hilhorst"
+                    },
+                    {
+                        "email": "maximilian@mbosch.me",
+                        "github": "ma27",
+                        "githubId": 6025220,
+                        "matrix": "@ma27:nicht-so.sexy",
+                        "name": "Maximilian Bosch"
+                    }
+                ],
+                {
+                    "email": "evils.devils@protonmail.com",
+                    "github": "evils",
+                    "githubId": 30512529,
+                    "matrix": "@evils:nixos.dev",
+                    "name": "Evils"
+                }
               ],
               "name": "ghidra-10.1.2",
               "outputsToInstall": [
