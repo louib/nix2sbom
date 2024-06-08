@@ -1124,6 +1124,7 @@ impl PackageGraph {
                 .insert(root_node.clone(), longest_path.len());
             package_graph_stats.longest_path = longest_path;
             package_graph_stats.purl_scope_count = self.get_purl_scope_stats();
+            package_graph_stats.patches_count = self.get_patches_count();
         }
         package_graph_stats
     }
@@ -1151,8 +1152,42 @@ impl PackageGraph {
                 response.insert(purl.scheme.clone(), 1);
             }
 
+            for current_node_child in &current_node.children {
+                node_queue.insert(current_node_child.clone());
+            }
+            for current_node_child in &current_node.build_inputs {
+                node_queue.insert(current_node_child.clone());
+            }
+            for current_node_child in &current_node.patches {
+                node_queue.insert(current_node_child.clone());
+            }
+            visited_children.insert(current_node_path.clone());
+        }
+
+        response
+    }
+
+    pub fn get_patches_count(&self) -> usize {
+        let mut response = 0;
+        let mut visited_children: HashSet<String> = HashSet::default();
+
+        let mut node_queue = self.root_nodes.clone();
+
+        while !node_queue.is_empty() {
+            let current_node_path = node_queue.pop_first().unwrap();
+
+            if visited_children.contains(&current_node_path) {
+                continue;
+            }
+
+            let current_node = self.nodes.get(&current_node_path).unwrap();
+            response += current_node.patches.len();
+
             // FIXME we should also go through the patches?
             for current_node_child in &current_node.children {
+                node_queue.insert(current_node_child.clone());
+            }
+            for current_node_child in &current_node.build_inputs {
                 node_queue.insert(current_node_child.clone());
             }
             visited_children.insert(current_node_path.clone());
