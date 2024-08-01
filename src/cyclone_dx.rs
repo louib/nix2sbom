@@ -131,6 +131,8 @@ pub fn dump_derivation(
     log::debug!("Dumping derivation for {}", &derivation_path);
     let mut component_builder = ComponentBuilder::default();
 
+    let derivation = package_graph.nodes.get(derivation_path).unwrap();
+
     component_builder.bom_ref(derivation_path.to_string());
     if let Some(name) = package_node.get_name() {
         component_builder.name(name.to_string());
@@ -145,6 +147,8 @@ pub fn dump_derivation(
     component_builder.scope("required".to_string());
     component_builder.purl(package_node.get_purl().to_string());
     if let Some(v) = package_node.get_version() {
+        component_builder.version(v.to_string());
+    } else if let Some(v) = derivation.get_version() {
         component_builder.version(v.to_string());
     }
 

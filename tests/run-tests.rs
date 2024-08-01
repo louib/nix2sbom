@@ -14,7 +14,7 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
     let packages_file_path = format!("{}/packages.json", path.display());
     let package_graph_file_path = format!("{}/package-graph.json", path.display());
     let derivations_file_path = format!("{}/derivations.json", path.display());
-    let sbom_file_path = format!("{}/sbom.json", path.display());
+    let _sbom_file_path = format!("{}/sbom.json", path.display());
 
     let file = File::open(packages_file_path).unwrap();
     let mut buf_reader = BufReader::new(file);
