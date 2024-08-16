@@ -8,6 +8,9 @@ on:
 
 jobs:
   compute-next-semantic-version:
+    permissions:
+      id-token: "write"
+      contents: "write" # FIXME this should not require write permission.
     uses: semantic-release-action/next-release-version/.github/workflows/next-release-version.yml@v4
 
   test:
