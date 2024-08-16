@@ -115,12 +115,15 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@ab6bcb2d5af0e904d04aea750e2089e9dc4cbfdd # v13
 
       - name: Build the artifact
-        run: nix develop .# -c cargo build --release
+        run: |
+          nix develop .# -c cargo build --release
+          ls -l
+          ls -l target
 
       - name: Add artifact to the release
         env:
           target_filename: "nix2sbom-x86_64-unknown-linux-musl"
-          artifact_path: "target/x86_64-unknown-linux-musl/release/nix2sbom"
+          artifact_path: "./target/x86_64-unknown-linux-musl/release/nix2sbom"
         run: |
           cp "$artifact_path" "$target_filename"
           sha256sum "${{ env.target_filename }}" > "${{ env.target_filename }}.sha256sum"
