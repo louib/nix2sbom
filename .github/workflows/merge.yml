@@ -29,6 +29,9 @@ jobs:
     name: Create the new release as a draft
     # If the version is empty, it means there is no new version to publish.
     if: ${{ needs.compute-next-semantic-version.outputs.new-release-version != '' }}
+    permissions:
+      id-token: "write"
+      contents: "write" # This is required to create the GH release
     runs-on: ubuntu-latest
     needs:
       - compute-next-semantic-version
@@ -100,6 +103,9 @@ jobs:
 
   build-binary:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "write" # This is required to add artifacts to the GH release
     needs:
       - create-new-release
     steps:
@@ -143,6 +149,9 @@ jobs:
   publish-github-release:
     name: Publish (undraft) the release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "write"
     needs:
       - create-new-release
       - build-binary
