@@ -75,9 +75,8 @@ jobs:
             "target_commitish": "${{ github.sha }}",
             "name": "${{ env.NEW_TAG }}",
             "prerelease": false,
-            "body": "Release generated from commit ${{ github.sha }}",
             "draft": true,
-            "generate_release_notes": false
+            "generate_release_notes": true
           }')
 
           new_release=$(curl -L \
