@@ -116,9 +116,7 @@ jobs:
 
       - name: Build the artifact
         run: |
-          nix develop .# -c cargo build --release
-          ls -l
-          ls -l target
+          nix develop .#musl -c cargo build --release
 
       - name: Add artifact to the release
         env:
@@ -191,4 +189,3 @@ jobs:
           visibility: "public"
           rolling: false
           tag: "v${{ needs.compute-next-semantic-version.outputs.new-release-version }}"
-

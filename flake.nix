@@ -25,10 +25,7 @@ rec {
     fenix,
     naersk,
   }: (
-    flake-utils.lib.eachSystem [
-      # Right now this has only been tested on one system.
-      "x86_64-linux"
-    ]
+    flake-utils.lib.eachDefaultSystem
     (
       system: (
         let
@@ -63,6 +60,14 @@ rec {
         in {
           devShells = {
             default = pkgs.mkShell {
+              buildInputs = [toolchain];
+              shellHook = ''
+                export CARGO_BUILD_TARGET="${targetSystem}"
+              '';
+            };
+            # The musl shell is used to produce the statically-compiled binary.
+            # It has only been tested on x86_64-linux systems.
+            musl = pkgs.mkShell {
               buildInputs = [toolchain];
               shellHook = ''
                 export CARGO_BUILD_TARGET="${targetSystem}"
