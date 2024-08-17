@@ -74,7 +74,7 @@ pub fn dump(
     }
 }
 
-pub fn dump_package_node(
+fn dump_package_node(
     package_derivation_path: &str,
     package_node: &crate::nix::PackageNode,
     package_graph: &crate::nix::PackageGraph,
@@ -100,7 +100,7 @@ pub fn dump_package_node(
     component
 }
 
-pub fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Component> {
+fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Component> {
     let derivation_name = match derivation.get_name() {
         Some(n) => n,
         None => {
@@ -123,7 +123,7 @@ pub fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Compon
     None
 }
 
-pub fn dump_derivation(
+fn dump_derivation(
     package_graph: &crate::nix::PackageGraph,
     derivation_path: &str,
     package_node: &crate::nix::PackageNode,
