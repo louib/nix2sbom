@@ -756,6 +756,11 @@ pub struct LicenseDetails {
 #[derive(Serialize)]
 #[derive(Deserialize)]
 pub struct PackageNode {
+    // FIXME this should be more strongly typed.
+    // The id for the package node. In our case, it is the nix store path
+    // of the main derivation for this package.
+    pub id: String,
+
     pub main_derivation: Derivation,
 
     pub package: Option<Package>,
@@ -1109,6 +1114,14 @@ pub struct PackageGraph {
 }
 
 impl PackageGraph {
+    pub fn get_root_node(&self) -> Option<String> {
+        if self.root_nodes.len() == 1 {
+            self.root_nodes.last().cloned()
+        } else {
+            None
+        }
+    }
+
     pub fn get_stats(&self, options: &DumpOptions) -> PackageGraphStats {
         let mut package_graph_stats = PackageGraphStats::default();
         package_graph_stats.nodes_count = self.nodes.len();
@@ -1305,6 +1318,7 @@ pub fn get_package_graph(
             None => None,
         };
         let mut current_node = PackageNode {
+            id: derivation_path.clone(),
             package,
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
@@ -1380,6 +1394,7 @@ pub fn get_package_graph_next(
     let mut all_child_derivations: HashSet<String> = HashSet::default();
     for (derivation_path, derivation) in derivations.iter() {
         let mut current_node = PackageNode {
+            id: derivation_path.clone(),
             package: None,
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
