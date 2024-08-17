@@ -33,7 +33,7 @@ rec {
           mainBranch = "main";
           authorEmail = "code@louib.net";
           projectName = "nix2sbom";
-          targetSystem = "x86_64-unknown-linux-musl";
+          targetMuslSystem = "x86_64-unknown-linux-musl";
 
           pkgs = import nixpkgs {
             inherit system;
@@ -43,6 +43,7 @@ rec {
             cargo
             rustc
             rustfmt
+            rust-analyzer
           ];
 
           # Defining our fenix-based Rust toolchain.
@@ -50,7 +51,7 @@ rec {
           toolchain = fenixPkgs.combine [
             fenixPkgs.minimal.cargo
             fenixPkgs.minimal.rustc
-            fenixPkgs.targets.${targetSystem}.latest.rust-std
+            fenixPkgs.targets.${targetMuslSystem}.latest.rust-std
           ];
 
           crossPkgs = naersk.lib.${system}.override {
@@ -60,9 +61,8 @@ rec {
         in {
           devShells = {
             default = pkgs.mkShell {
-              buildInputs = [toolchain];
+              buildInputs = cargoPackages;
               shellHook = ''
-                export CARGO_BUILD_TARGET="${targetSystem}"
               '';
             };
             # The musl shell is used to produce the statically-compiled binary.
@@ -70,7 +70,7 @@ rec {
             musl = pkgs.mkShell {
               buildInputs = [toolchain];
               shellHook = ''
-                export CARGO_BUILD_TARGET="${targetSystem}"
+                export CARGO_BUILD_TARGET="${targetMuslSystem}"
               '';
             };
           };
