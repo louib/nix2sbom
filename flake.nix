@@ -8,20 +8,35 @@ rec {
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    naersk = {
+      url = "github:nix-community/naersk";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
     self,
     nixpkgs,
     flake-utils,
+    fenix,
+    naersk,
   }: (
-    flake-utils.lib.eachDefaultSystem (
+    flake-utils.lib.eachSystem [
+      # Right now this has only been tested on one system.
+      "x86_64-linux"
+    ]
+    (
       system: (
         let
           authorName = "louib";
           mainBranch = "main";
           authorEmail = "code@louib.net";
           projectName = "nix2sbom";
+          targetSystem = "x86_64-unknown-linux-musl";
 
           pkgs = import nixpkgs {
             inherit system;
@@ -32,16 +47,25 @@ rec {
             rustc
             rustfmt
           ];
+
+          # Defining our fenix-based Rust toolchain.
+          fenixPkgs = fenix.packages.${system};
+          toolchain = fenixPkgs.combine [
+            fenixPkgs.minimal.cargo
+            fenixPkgs.minimal.rustc
+            fenixPkgs.targets.${targetSystem}.latest.rust-std
+          ];
+
+          crossPkgs = naersk.lib.${system}.override {
+            cargo = toolchain;
+            rustc = toolchain;
+          };
         in {
           devShells = {
             default = pkgs.mkShell {
-              # nativeBuildInputs = cargoPackages ++ [pkgs.glibc.static pkgs.pkg-config];
-              buildInputs = cargoPackages;
-
+              buildInputs = [toolchain];
               shellHook = ''
-                # Even with that flag, the target has to be passed explicitly when building:
-                # cargo build --release --target x86_64-unknown-linux-gnu
-                # export RUSTFLAGS='-C target-feature=+crt-static'
+                export CARGO_BUILD_TARGET="${targetSystem}"
               '';
             };
           };
