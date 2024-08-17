@@ -58,17 +58,18 @@ impl Format {
         serialization_format: &SerializationFormat,
         package_graph: &crate::nix::PackageGraph,
         options: &crate::nix::DumpOptions,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<String, anyhow::Error> {
         match self {
             crate::sbom::Format::CycloneDX => {
                 return match crate::cyclone_dx::dump(&package_graph, &serialization_format, options) {
                     Ok(d) => Ok(d),
-                    Err(s) => Err(Box::new(crate::errors::Error::UnknownError(s))),
+                    Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
                 };
             }
-            crate::sbom::Format::SPDX => Err(Box::new(crate::errors::Error::UnsupportedFormat(
-                "spdx".to_string(),
-            ))),
+            crate::sbom::Format::SPDX => Err(anyhow::format_err!(
+                "{} is not supported yet",
+                serialization_format.to_string()
+            )),
             crate::sbom::Format::PrettyPrint => {
                 let display_options = crate::nix::DisplayOptions {
                     print_stdenv: false,
@@ -116,5 +117,12 @@ impl SerializationFormat {
             return Some(SerializationFormat::XML);
         }
         None
+    }
+    pub fn to_string(&self) -> String {
+        match self {
+            crate::sbom::SerializationFormat::JSON => "json".to_string(),
+            crate::sbom::SerializationFormat::YAML => "yaml".to_string(),
+            crate::sbom::SerializationFormat::XML => "xml".to_string(),
+        }
     }
 }

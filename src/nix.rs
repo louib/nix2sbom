@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::process::Command;
@@ -213,7 +211,7 @@ impl BuildInputType {
 }
 
 impl Derivation {
-    pub fn get_derivations_for_current_system() -> Result<Derivations, Box<dyn Error>> {
+    pub fn get_derivations_for_current_system() -> Result<Derivations, anyhow::Error> {
         Derivation::get_derivations(CURRENT_SYSTEM_PATH)
     }
 
@@ -224,7 +222,7 @@ impl Derivation {
         None
     }
 
-    pub fn get_derivations(file_path: &str) -> Result<Derivations, Box<dyn Error>> {
+    pub fn get_derivations(file_path: &str) -> Result<Derivations, anyhow::Error> {
         let output = Command::new("nix")
             .arg("derivation")
             .arg("show")
@@ -236,7 +234,11 @@ impl Derivation {
 
         if !output.status.success() {
             let stderr = String::from_utf8(output.stderr).unwrap();
-            return Err(format!("Could not get derivations from {}: {}", &file_path, &stderr).into());
+            return Err(anyhow::format_err!(
+                "Could not get derivations from {}: {}",
+                &file_path,
+                &stderr
+            ));
         }
 
         let flat_derivations: Derivations = serde_json::from_slice(&output.stdout)?;
@@ -251,7 +253,7 @@ impl Derivation {
     pub fn build_and_get_derivations(
         file_path: &str,
         derivation_ref: &str,
-    ) -> Result<Derivations, Box<dyn Error>> {
+    ) -> Result<Derivations, anyhow::Error> {
         let derivation_path = format!("{}#{}", file_path, derivation_ref);
         let output = Command::new("nix")
             .arg("build")
