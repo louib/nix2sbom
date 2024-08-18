@@ -8,7 +8,7 @@
 
 `nix2sbom` extracts the SBOM (Software Bill of Materials) from a Nix derivation
 
-📚 [Documentation for using `nix2sbom` is here](https://github.com/louib/nix2sbom/wiki/Use-nix2sbom)
+📚 [Documentation is here](https://github.com/louib/nix2sbom/wiki/Use-nix2sbom)
 
 > **Warning**
 > This repo is still a work-in-progress.
