@@ -14,12 +14,13 @@ use clap::Parser;
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 #[clap(about = "nix2sbom extracts the SBOM (Software Bill of Materials) from a Nix derivation", long_about = None)]
 struct NixToSBOM {
-    /// Path of the file to extract a SBOM manifest from.
-    #[clap(long, short)]
-    file_path: Option<String>,
+    /// Reference to a nix derivation. The reference includes the path to the nix
+    /// file and the path of the nix derivation within the file.
+    /// Example: /path/to/default.nix#derivation
+    nix_ref: Option<String>,
 
     /// Output format for the SBOM manifest. Defaults to cdx (CycloneDX).
-    #[clap(long)]
+    #[clap(short, long)]
     format: Option<String>,
 
     /// Which format to use for serializing the SBOM. CycloneDX supports yaml and json.
@@ -72,9 +73,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         None => output_format.get_default_serialization_format(),
     };
 
-    let derivations: nix2sbom::nix::Derivations = if let Some(file_path) = args.file_path {
-        log::info!("Getting the derivations from {}", &file_path);
-        nix2sbom::nix::Derivation::get_derivations(&file_path)?
+    let derivations: nix2sbom::nix::Derivations = if let Some(nix_ref) = args.nix_ref {
+        log::info!("Getting the derivations from {}", &nix_ref);
+        nix2sbom::nix::Derivation::get_derivations(&nix_ref)?
     } else if args.current_system {
         log::info!("Getting the derivations from the current system");
         nix2sbom::nix::Derivation::get_derivations_for_current_system()?
