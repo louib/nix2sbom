@@ -17,6 +17,7 @@
 
 ## Features
 * Supports CycloneDX 1.4 format
+* Supports SPDX 2.3 format (Experimental)
 * Supports JSON and YAML serialization formats
 * Generates a SBOM for your current `NixOS` system
 * Detects and handles patches

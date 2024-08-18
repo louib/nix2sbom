@@ -66,10 +66,12 @@ impl Format {
                     Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
                 };
             }
-            crate::sbom::Format::SPDX => Err(anyhow::format_err!(
-                "{} is not supported yet",
-                serialization_format.to_string()
-            )),
+            crate::sbom::Format::SPDX => {
+                return match crate::spdx::dump(&package_graph, &serialization_format, options) {
+                    Ok(d) => Ok(d),
+                    Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
+                };
+            }
             crate::sbom::Format::PrettyPrint => {
                 let display_options = crate::nix::DisplayOptions {
                     print_stdenv: false,

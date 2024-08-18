@@ -4,4 +4,5 @@ pub mod logger;
 pub mod mirrors;
 pub mod nix;
 pub mod sbom;
+pub mod spdx;
 pub mod utils;
