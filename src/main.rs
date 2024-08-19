@@ -34,9 +34,9 @@ struct NixToSBOM {
     #[clap(long)]
     metadata_path: Option<String>,
 
-    /// Do not use the metadata from the store to generate the SBOM.
+    /// Use the metadata from the store to help generating the SBOM.
     #[clap(long, short)]
-    no_meta: bool,
+    meta: bool,
 
     /// Include only the runtime dependencies in the SBOM.
     #[clap(long, short)]
@@ -85,7 +85,7 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     };
     log::info!("Found {} derivations", derivations.len());
 
-    let packages = nix2sbom::nix::get_packages(args.metadata_path, args.no_meta)?;
+    let packages = nix2sbom::nix::get_packages(args.metadata_path, !args.meta)?;
     log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");
