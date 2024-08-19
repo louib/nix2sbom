@@ -10,11 +10,6 @@
 
 📚 [Documentation is here](https://github.com/louib/nix2sbom/wiki/Use-nix2sbom)
 
-> **Warning**
-> This repo is still a work-in-progress.
-  The command-line options and command names might change
-  significantly until the project reaches version 1.0.0.
-
 ## Features
 * Supports CycloneDX 1.4 format
 * Supports SPDX 2.3 format (Experimental)
