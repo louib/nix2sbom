@@ -23,14 +23,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     let derivations = nix2sbom::nix::Derivation::get_derivations(&args.file_path)?;
 
-    let packages = nix2sbom::nix::get_packages(None, args.no_meta)?;
-
-    // let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    let packages = nix2sbom::nix::Packages::default();
     let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
-
-    let dump_options = nix2sbom::nix::DumpOptions::default();
-
-    let package_graph_stats = package_graph.get_stats(&dump_options);
 
     let mut required_packages = nix2sbom::nix::Packages::default();
     for (_derivation_path, derivation) in derivations.iter() {
@@ -45,50 +39,20 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
             );
         }
     }
-    let packages = required_packages;
-
-    let _sbom_dump = match nix2sbom::sbom::Format::CycloneDX.dump(
-        &nix2sbom::sbom::SerializationFormat::JSON,
-        &package_graph,
-        &dump_options,
-    ) {
-        Ok(d) => d,
-        Err(e) => {
-            eprintln!("{}", e.to_string());
-            return Ok(std::process::ExitCode::FAILURE);
-        }
-    };
 
     // Saving the fixtures so we can replay the test later.
     let target_dir = format!("./tests/fixtures/{}", args.name);
 
     std::fs::create_dir(&target_dir)?;
 
-    let packages_file_path = format!("{}/packages.json", target_dir);
     let package_graph_file_path = format!("{}/package-graph.json", target_dir);
-    let package_graph_stats_file_path = format!("{}/package-graph-stats.json", target_dir);
     let derivations_file_path = format!("{}/derivations.json", target_dir);
-    // FIXME the sbom file is not deterministic yet, so we can't us it for the integration tests.
-    // let sbom_file_path = format!("{}/sbom.json", target_dir);
-
-    let mut packages_file = File::create(packages_file_path)?;
-    packages_file.write_all(serde_json::to_string_pretty(&packages).unwrap().as_bytes())?;
 
     let mut derivations_file = File::create(derivations_file_path)?;
     derivations_file.write_all(serde_json::to_string_pretty(&derivations).unwrap().as_bytes())?;
 
     let mut package_graph_file = File::create(package_graph_file_path)?;
     package_graph_file.write_all(serde_json::to_string_pretty(&package_graph).unwrap().as_bytes())?;
-
-    let mut package_graph_stats_file = File::create(package_graph_stats_file_path)?;
-    package_graph_stats_file.write_all(
-        serde_json::to_string_pretty(&package_graph_stats)
-            .unwrap()
-            .as_bytes(),
-    )?;
-
-    // let mut sbom_file = File::create(sbom_file_path)?;
-    // sbom_file.write_all(sbom_dump.as_bytes());
 
     Ok(std::process::ExitCode::SUCCESS)
 }
