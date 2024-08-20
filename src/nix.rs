@@ -1151,7 +1151,7 @@ impl PackageGraph {
             if let Some(source_derivation_path) = derivation.main_derivation.get_source_path() {
                 group.nodes.insert(source_derivation_path.clone());
 
-                let source_derivation = self.nodes.get(node_id).unwrap();
+                let source_derivation = self.nodes.get(source_derivation_path).unwrap();
 
                 // We already have an url for this group.
                 if group.url.is_empty() {
