@@ -1111,9 +1111,86 @@ pub struct PackageGraphStats {
 pub struct PackageGraph {
     pub nodes: BTreeMap<String, PackageNode>,
     pub root_nodes: BTreeSet<String>,
+    pub group_membership: BTreeMap<String, String>,
+}
+
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(Serialize)]
+#[derive(Deserialize)]
+#[derive(PartialEq)]
+pub struct PackageGroup {
+    pub id: String,
+    pub url: String,
+    pub nodes: BTreeSet<String>,
 }
 
 impl PackageGraph {
+    pub fn get_package_groups(&self) -> BTreeMap<String, PackageGroup> {
+        let mut response = BTreeMap::default();
+
+        // Handle the groups that have a source derivation
+        for (node_id, group_id) in &self.group_membership {
+            if node_id != group_id {
+                continue;
+            }
+
+            let mut group = PackageGroup {
+                id: group_id.clone(),
+                url: "".to_string(),
+                nodes: BTreeSet::default(),
+            };
+
+            group.nodes.insert(group_id.clone());
+
+            let derivation = self.nodes.get(node_id).unwrap();
+            if let Some(url) = derivation.main_derivation.get_url() {
+                group.url = url;
+            }
+
+            if let Some(source_derivation_path) = derivation.main_derivation.get_source_path() {
+                group.nodes.insert(source_derivation_path.clone());
+
+                let source_derivation = self.nodes.get(node_id).unwrap();
+
+                // We already have an url for this group.
+                if group.url.is_empty() {
+                    if let Some(url) = source_derivation.main_derivation.get_url() {
+                        group.url = url;
+                    }
+                }
+            }
+
+            response.insert(group_id.clone(), group);
+        }
+
+        // Handle the groups that have a single derivation
+        for (node_id, group_id) in &self.group_membership {
+            if response.contains_key(node_id) {
+                continue;
+            }
+
+            let mut group = PackageGroup {
+                id: group_id.clone(),
+                url: "".to_string(),
+                nodes: BTreeSet::default(),
+            };
+
+            let derivation = match self.nodes.get(node_id) {
+                Some(d) => d,
+                None => {
+                    continue;
+                }
+            };
+            if let Some(url) = derivation.main_derivation.get_url() {
+                group.url = url;
+            }
+
+            response.insert(group_id.clone(), group);
+        }
+        response
+    }
+
     pub fn get_root_node(&self) -> Option<String> {
         if self.root_nodes.len() == 1 {
             self.root_nodes.last().cloned()
@@ -1392,6 +1469,26 @@ pub fn get_package_graph_next(
     let mut response = PackageGraph::default();
 
     let mut all_child_derivations: HashSet<String> = HashSet::default();
+    // For the derivations that have a source derivation, we mark them as group leader.
+    for (derivation_path, derivation) in derivations.iter() {
+        let source_derivation_path = match derivation.get_source_path() {
+            None => continue,
+            Some(p) => p,
+        };
+
+        if response.group_membership.get(derivation_path).is_none() {
+            response
+                .group_membership
+                .insert(derivation_path.clone(), derivation_path.clone());
+        }
+
+        if response.group_membership.get(source_derivation_path).is_none() {
+            response
+                .group_membership
+                .insert(source_derivation_path.clone(), derivation_path.clone());
+        }
+    }
+
     for (derivation_path, derivation) in derivations.iter() {
         let mut current_node = PackageNode {
             id: derivation_path.clone(),
@@ -1402,6 +1499,13 @@ pub fn get_package_graph_next(
             patches: BTreeSet::default(),
             build_inputs: BTreeSet::default(),
         };
+
+        // Set the group membership if not done at that point.
+        if response.group_membership.get(derivation_path).is_none() {
+            response
+                .group_membership
+                .insert(derivation_path.clone(), derivation_path.clone());
+        }
 
         let current_node_patches = derivation.get_patches();
         let current_node_build_inputs = derivation.get_build_inputs();

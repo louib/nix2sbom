@@ -25,34 +25,21 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     let packages = nix2sbom::nix::Packages::default();
     let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
-
-    let mut required_packages = nix2sbom::nix::Packages::default();
-    for (_derivation_path, derivation) in derivations.iter() {
-        let derivation_name = match derivation.get_name() {
-            Some(n) => n,
-            None => continue,
-        };
-        if packages.contains_key(&derivation_name) {
-            required_packages.insert(
-                derivation_name.to_string(),
-                packages.get(&derivation_name).unwrap().clone(),
-            );
-        }
-    }
+    let package_groups = package_graph.get_package_groups();
 
     // Saving the fixtures so we can replay the test later.
     let target_dir = format!("./tests/fixtures/{}", args.name);
 
     std::fs::create_dir(&target_dir)?;
 
-    let package_graph_file_path = format!("{}/package-graph.json", target_dir);
     let derivations_file_path = format!("{}/derivations.json", target_dir);
+    let package_groups_file_path = format!("{}/package-groups.yaml", target_dir);
 
     let mut derivations_file = File::create(derivations_file_path)?;
     derivations_file.write_all(serde_json::to_string_pretty(&derivations).unwrap().as_bytes())?;
 
-    let mut package_graph_file = File::create(package_graph_file_path)?;
-    package_graph_file.write_all(serde_json::to_string_pretty(&package_graph).unwrap().as_bytes())?;
+    let mut package_groups_file = File::create(package_groups_file_path)?;
+    package_groups_file.write_all(serde_yaml::to_string(&package_groups).unwrap().as_bytes())?;
 
     Ok(std::process::ExitCode::SUCCESS)
 }
