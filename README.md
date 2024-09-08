@@ -21,7 +21,7 @@
 ## Using
 ### In GitHub Actions
 Here is an example of how to generate an SPDX manifest for your nix flake in a GHA workflow:
-```
+```yaml
   generate-sbom-manifests:
     name: Generate SPDX SBOM manifest
     runs-on: ubuntu-latest
