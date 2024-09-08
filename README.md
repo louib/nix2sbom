@@ -18,6 +18,30 @@
 * Detects and handles patches
 * Discovers git URLs (using archive URLs)
 
+## Using
+### In GitHub Actions
+Here is an example of how to generate an SPDX manifest for your nix flake in a GHA workflow:
+```
+  generate-sbom-manifests:
+    name: Generate SPDX SBOM manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@ab6bcb2d5af0e904d04aea750e2089e9dc4cbfdd # v13
+
+      - name: Install nix2sbom
+        uses: EricCrosson/install-github-release-binary@681cc3de7c5c5ac935b1a2a19e4e0c577c4d3027 # v2.3.4
+        with:
+          targets: louib/nix2sbom/nix2sbom@v2.1.2
+
+      - name: Generate the SPDX manifest
+        run: |
+          nix2sbom .# -f spdx > sbom.spdx
+```
+
 ## Installing
 
 ### With Nix
