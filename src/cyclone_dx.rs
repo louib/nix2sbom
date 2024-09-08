@@ -15,7 +15,7 @@ pub fn dump(
     package_graph: &crate::nix::PackageGraph,
     format: &crate::sbom::SerializationFormat,
     options: &crate::nix::DumpOptions,
-) -> Result<String, String> {
+) -> Result<String, anyhow::Error> {
     let mut metadata = Metadata::default();
     let now = SystemTime::now();
     let now: DateTime<Utc> = now.into();
@@ -67,10 +67,21 @@ pub fn dump(
 
     match format {
         crate::sbom::SerializationFormat::JSON => {
-            serde_json::to_string_pretty(&cyclonedx).map_err(|e| e.to_string())
+            let json_dump = match options.pretty {
+                Some(false) => serde_json::to_string(&cyclonedx),
+                _ => serde_json::to_string_pretty(&cyclonedx),
+            };
+            return match json_dump {
+                Ok(j) => Ok(j),
+                Err(e) => Err(anyhow::format_err!(e.to_string())),
+            };
         }
-        crate::sbom::SerializationFormat::YAML => serde_yaml::to_string(&cyclonedx).map_err(|e| e.to_string()),
-        crate::sbom::SerializationFormat::XML => Err("XML is not supported for CycloneDX".to_string()),
+        crate::sbom::SerializationFormat::YAML => {
+            serde_yaml::to_string(&cyclonedx).map_err(|e| anyhow::format_err!(e.to_string()))
+        }
+        crate::sbom::SerializationFormat::XML => Err(anyhow::format_err!(
+            "XML is not supported for CycloneDX".to_string()
+        )),
     }
 }
 

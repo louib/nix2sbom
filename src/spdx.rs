@@ -5,7 +5,7 @@ use serde_spdx::spdx::v_2_3::{
 pub fn dump(
     package_graph: &crate::nix::PackageGraph,
     _format: &crate::sbom::SerializationFormat,
-    _options: &crate::nix::DumpOptions,
+    options: &crate::nix::DumpOptions,
 ) -> Result<String, anyhow::Error> {
     let creation_info = SpdxCreationInfoBuilder::default()
         .created("created")
@@ -45,7 +45,12 @@ pub fn dump(
     }
 
     spdx_builder.packages(packages);
-    let response = serde_json::to_string(&spdx_builder.build()?)?;
+    let spdx_manifest = spdx_builder.build()?;
+
+    let response = match options.pretty {
+        Some(false) => serde_json::to_string(&spdx_manifest)?,
+        _ => serde_json::to_string_pretty(&spdx_manifest)?,
+    };
 
     Ok(response)
 }

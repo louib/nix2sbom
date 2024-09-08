@@ -35,6 +35,8 @@ pub struct DisplayOptions {
 #[derive(Default)]
 pub struct DumpOptions {
     pub runtime_only: bool,
+    /// Whether or not to pretty print the manifests when dumping.
+    pub pretty: Option<bool>,
 }
 
 pub enum PackageScope {

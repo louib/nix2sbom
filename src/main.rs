@@ -38,6 +38,10 @@ struct NixToSBOM {
     #[clap(long, short)]
     meta: bool,
 
+    /// Do not pretty print the generated SBOM manifest
+    #[clap(long)]
+    no_pretty: bool,
+
     /// Include only the runtime dependencies in the SBOM.
     #[clap(long, short)]
     runtime_only: bool,
@@ -101,6 +105,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     let mut dump_options = nix2sbom::nix::DumpOptions::default();
     dump_options.runtime_only = args.runtime_only;
+    if args.no_pretty {
+        dump_options.pretty = Some(false);
+    };
 
     let sbom_dump = match output_format.dump(&serialization_format, &package_graph, &dump_options) {
         Ok(d) => d,
