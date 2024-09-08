@@ -123,12 +123,13 @@ jobs:
 
       - name: Add artifact to the release
         env:
-          target_filename: "nix2sbom-x86_64-unknown-linux-musl"
+          binary_path: "nix2sbom-x86_64-unknown-linux-musl"
           artifact_path: "./target/x86_64-unknown-linux-musl/release/nix2sbom"
         run: |
-          cp "$artifact_path" "$target_filename"
-          sha256sum "${{ env.target_filename }}" > "${{ env.target_filename }}.sha256sum"
-          cat "${{ env.target_filename }}.sha256sum"
+          checksum_path="${{ env.binary_path }}.sha256sum"
+
+          cp "$artifact_path" "$binary_path"
+          sha256sum "${{ env.binary_path }}" > "$checksum_path"
 
           curl -L \
             -X POST \
@@ -136,8 +137,8 @@ jobs:
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/octet-stream" \
-            "${{ needs.create-new-release.outputs.release-url }}?name=${{ env.target_filename }}" \
-            --data-binary "@${{ env.target_filename }}"
+            "${{ needs.create-new-release.outputs.release-url }}?name=${{ env.binary_path }}&label=${{ env.binary_path }}" \
+            --data-binary "@${{ env.binary_path }}"
           echo "Uploaded the artifact to the GitHub release"
 
           curl -L \
@@ -146,8 +147,8 @@ jobs:
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/octet-stream" \
-            "${{ needs.create-new-release.outputs.release-url }}?name=${{ env.target_filename }}.sha256sum" \
-            --data-binary "@${{ env.target_filename }}.sha256sum"
+            "${{ needs.create-new-release.outputs.release-url }}?name=$checksum_path&label=$checksum_path" \
+            --data-binary "@$checksum_path"
           echo "Uploaded the artifact checksum to the GitHub release"
 
   publish-github-release:
