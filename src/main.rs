@@ -94,12 +94,15 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
 
     log::info!("Building the package graph");
     // let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
-    let package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
+    let mut package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
     log::info!("{} nodes in the package graph", package_graph.nodes.len());
     log::debug!(
         "{} root nodes in the package graph",
         package_graph.root_nodes.len()
     );
+
+    let package_groups = package_graph.get_package_groups();
+    log::info!("{} package groups", package_groups.len());
 
     log::debug!("Creating the SBOM");
 

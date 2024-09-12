@@ -1128,8 +1128,82 @@ pub struct PackageGroup {
 }
 
 impl PackageGraph {
-    pub fn get_package_groups(&self) -> BTreeMap<String, PackageGroup> {
+    pub fn get_derivation_from_out_name(
+        &self,
+        current_derivation: &Derivation,
+        out_name: &str,
+    ) -> Result<String, anyhow::Error> {
+        for input_derivation_path in current_derivation.input_derivations.keys() {
+            let input_derivation = match self.nodes.get(input_derivation_path) {
+                Some(d) => d,
+                None => {
+                    return Err(anyhow::format_err!(
+                        "Could not get derivation for {} in package graph",
+                        &input_derivation_path
+                    ))
+                }
+            }
+            .main_derivation
+            .clone();
+
+            for output in input_derivation.outputs.values() {
+                if output.path == out_name {
+                    return Ok(input_derivation_path.clone());
+                }
+            }
+        }
+        return Err(anyhow::format_err!(
+            "Could not find input derivation with out name {}",
+            &out_name,
+        ));
+    }
+
+    pub fn get_package_groups(&mut self) -> BTreeMap<String, PackageGroup> {
         let mut response = BTreeMap::default();
+
+        // For the derivations that have a source derivation, we mark them as group leader.
+        for (derivation_path, derivation) in self.nodes.iter() {
+            let source_derivation_out_path = match derivation.main_derivation.get_source_path() {
+                Some(p) => p,
+                None => {
+                    if self.group_membership.get(derivation_path).is_none() {
+                        self.group_membership
+                            .insert(derivation_path.clone(), derivation_path.clone());
+                    }
+                    continue;
+                }
+            };
+
+            let source_derivation_path = match self
+                .get_derivation_from_out_name(&derivation.main_derivation, source_derivation_out_path)
+            {
+                Ok(d) => d,
+                Err(_e) => {
+                    log::warn!(
+                        "Could not get source derivation in package graph for {}",
+                        &source_derivation_out_path
+                    );
+
+                    continue;
+                }
+            };
+
+            log::debug!(
+                "found source_derivation {} for out path {}",
+                source_derivation_path,
+                source_derivation_out_path
+            );
+
+            if self.group_membership.get(derivation_path).is_none() {
+                self.group_membership
+                    .insert(derivation_path.clone(), derivation_path.clone());
+            }
+
+            if self.group_membership.get(&source_derivation_path).is_none() {
+                self.group_membership
+                    .insert(source_derivation_path.clone(), derivation_path.clone());
+            }
+        }
 
         // Handle the groups that have a source derivation
         for (node_id, group_id) in &self.group_membership {
@@ -1150,14 +1224,39 @@ impl PackageGraph {
                 group.url = url;
             }
 
-            if let Some(source_derivation_path) = derivation.main_derivation.get_source_path() {
-                group.nodes.insert(source_derivation_path.clone());
+            if let Some(source_derivation_out_path) = derivation.main_derivation.get_source_path() {
+                let source_derivation_path = match self
+                    .get_derivation_from_out_name(&derivation.main_derivation, source_derivation_out_path)
+                {
+                    Ok(d) => d,
+                    Err(_e) => {
+                        log::warn!(
+                            "Could not get source derivation in package graph for {}",
+                            &source_derivation_out_path
+                        );
 
-                let source_derivation = self.nodes.get(source_derivation_path).unwrap();
+                        continue;
+                    }
+                };
+
+                let source_derivation = match self.nodes.get(&source_derivation_path) {
+                    Some(d) => d,
+                    None => {
+                        // FIXME this function should return an error.
+                        panic!(
+                            "Could not get derivation for {} in package graph",
+                            &source_derivation_path
+                        );
+                    }
+                }
+                .main_derivation
+                .clone();
+
+                group.nodes.insert(source_derivation_path.clone());
 
                 // We already have an url for this group.
                 if group.url.is_empty() {
-                    if let Some(url) = source_derivation.main_derivation.get_url() {
+                    if let Some(url) = source_derivation.get_url() {
                         group.url = url;
                     }
                 }
@@ -1168,7 +1267,7 @@ impl PackageGraph {
 
         // Handle the groups that have a single derivation
         for (node_id, group_id) in &self.group_membership {
-            if response.contains_key(node_id) {
+            if response.contains_key(group_id) {
                 continue;
             }
 
@@ -1471,26 +1570,6 @@ pub fn get_package_graph_next(
     let mut response = PackageGraph::default();
 
     let mut all_child_derivations: HashSet<String> = HashSet::default();
-    // For the derivations that have a source derivation, we mark them as group leader.
-    for (derivation_path, derivation) in derivations.iter() {
-        let source_derivation_path = match derivation.get_source_path() {
-            None => continue,
-            Some(p) => p,
-        };
-
-        if response.group_membership.get(derivation_path).is_none() {
-            response
-                .group_membership
-                .insert(derivation_path.clone(), derivation_path.clone());
-        }
-
-        if response.group_membership.get(source_derivation_path).is_none() {
-            response
-                .group_membership
-                .insert(source_derivation_path.clone(), derivation_path.clone());
-        }
-    }
-
     for (derivation_path, derivation) in derivations.iter() {
         let mut current_node = PackageNode {
             id: derivation_path.clone(),
@@ -1501,13 +1580,6 @@ pub fn get_package_graph_next(
             patches: BTreeSet::default(),
             build_inputs: BTreeSet::default(),
         };
-
-        // Set the group membership if not done at that point.
-        if response.group_membership.get(derivation_path).is_none() {
-            response
-                .group_membership
-                .insert(derivation_path.clone(), derivation_path.clone());
-        }
 
         let current_node_patches = derivation.get_patches();
         let current_node_build_inputs = derivation.get_build_inputs();

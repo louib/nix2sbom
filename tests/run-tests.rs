@@ -29,7 +29,7 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
         serde_yaml::from_str(&contents).unwrap();
 
     let packages = nix2sbom::nix::Packages::default();
-    let expected_package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
+    let mut expected_package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
     let expected_package_groups = expected_package_graph.get_package_groups();
 
     assert_eq!(expected_package_groups.len(), package_groups.len());
