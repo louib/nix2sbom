@@ -115,7 +115,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@ab6bcb2d5af0e904d04aea750e2089e9dc4cbfdd # v13
+        uses: DeterminateSystems/nix-installer-action@da36cb69b1c3247ad7a1f931ebfd954a1105ef14 # v14
 
       - name: Build the artifact
         run: |
@@ -184,11 +184,11 @@ jobs:
       contents: "read"
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/nix-installer-action@da36cb69b1c3247ad7a1f931ebfd954a1105ef14 # v14
       - run: |
           : build the nix flake
           nix build .#
-      - uses: DeterminateSystems/flakehub-push@main
+      - uses: DeterminateSystems/flakehub-push@8da9e38b7e77f2b0a8aa08a22e57cc5c6316ea72 # v5
         with:
           visibility: "public"
           rolling: false
