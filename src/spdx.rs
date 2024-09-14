@@ -59,7 +59,7 @@ fn dump_package(
     package_node: &crate::nix::PackageNode,
     _options: &crate::nix::DumpOptions,
 ) -> Result<SpdxItemPackages, anyhow::Error> {
-    let package_name = match package_node.get_name() {
+    let package_name = match package_node.name.clone() {
         Some(n) => n,
         None => package_node.id.clone(),
     };
@@ -68,7 +68,6 @@ fn dump_package(
     let package_builder = package_builder
         .name(package_name)
         .spdxid(package_node.id.clone())
-        // .version_info(package_node.get_version().into())
         // .package_file_name("package_file_name")
         // .supplier("supplier")
         // .originator("originator")
@@ -96,7 +95,7 @@ fn dump_package(
         .license_declared("license_declared")
         .license_comments("license_comments");
 
-    if let Some(package_version) = package_node.get_version() {
+    if let Some(package_version) = package_node.version.clone() {
         package_builder.version_info(package_version);
     }
 

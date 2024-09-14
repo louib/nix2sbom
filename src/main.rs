@@ -115,6 +115,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     );
 
     package_graph.populate_url()?;
+    package_graph.populate_version()?;
+    package_graph.populate_name()?;
     let mut packages_without_a_url_or_group = 0;
     for node in package_graph.nodes.values() {
         if node.group_id.is_some() {

@@ -142,10 +142,8 @@ fn dump_derivation(
     log::debug!("Dumping derivation for {}", &derivation_path);
     let mut component_builder = ComponentBuilder::default();
 
-    let derivation = package_graph.nodes.get(derivation_path).unwrap();
-
     component_builder.bom_ref(derivation_path.to_string());
-    if let Some(name) = package_node.get_name() {
+    if let Some(name) = &package_node.name {
         component_builder.name(name.to_string());
     } else {
         return None;
@@ -157,9 +155,7 @@ fn dump_derivation(
     // I'm assuming here that if a package has been installed by Nix, it was required.
     component_builder.scope("required".to_string());
     component_builder.purl(package_node.get_purl().to_string());
-    if let Some(v) = package_node.get_version() {
-        component_builder.version(v.to_string());
-    } else if let Some(v) = derivation.get_version() {
+    if let Some(v) = package_node.version.clone() {
         component_builder.version(v.to_string());
     }
 

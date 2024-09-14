@@ -778,6 +778,8 @@ pub struct PackageNode {
     pub id: String,
 
     pub url: Option<String>,
+    pub version: Option<String>,
+    pub name: Option<String>,
 
     pub main_derivation: Derivation,
 
@@ -861,50 +863,14 @@ impl PackageNode {
         response
     }
 
-    pub fn get_name(&self) -> Option<String> {
-        if let Some(p) = &self.package {
-            if p.pname != "source" {
-                return Some(p.pname.to_string());
-            }
-            if p.name != "source" {
-                return Some(p.name.to_string());
-            }
-        }
-
-        if let Some(name) = self.main_derivation.get_name() {
-            return Some(name);
-        }
-
-        // FIXME I'm not sure we should rely on the sources to get the name here.
-        for source in &self.sources {
-            if let Some(source_name) = source.get_name() {
-                if source_name != "source" {
-                    return Some(source_name.to_string());
-                }
-            }
-        }
-
-        return None;
-    }
-
     pub fn is_inline_script(&self) -> bool {
         self.main_derivation.is_inline_script()
-    }
-
-    pub fn get_version(&self) -> Option<String> {
-        if let Some(p) = &self.package {
-            if !p.version.is_empty() {
-                return Some(p.version.to_string());
-            }
-        }
-
-        return None;
     }
 
     pub fn get_purl(&self) -> PackageURL {
         let mut package_url = PackageURL::default();
 
-        let mut name: Option<String> = self.get_name();
+        let mut name: Option<String> = self.name.clone();
         if let Some(n) = &name {
             log::debug!("Found package name from source: {}", &n);
         } else {
@@ -924,7 +890,7 @@ impl PackageNode {
         }
         package_url.host = name.unwrap_or("".to_string());
 
-        package_url.version = self.get_version();
+        package_url.version = self.version.clone();
         if package_url.version.is_none() {
             package_url.version = self.main_derivation.get_version();
         }
@@ -1271,6 +1237,56 @@ impl PackageGraph {
         Ok(())
     }
 
+    pub fn populate_version(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            if let Some(version) = package.main_derivation.get_version() {
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.version = Some(version);
+                continue;
+            }
+
+            let source_derivation_path = match package.source_derivation {
+                Some(p) => p,
+                None => continue,
+            };
+
+            let source_package = self.nodes.get(&source_derivation_path).unwrap();
+
+            if let Some(version) = source_package.main_derivation.get_version() {
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.version = Some(version);
+                continue;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn populate_name(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            if let Some(name) = package.main_derivation.get_name() {
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.name = Some(name);
+                continue;
+            }
+
+            let source_derivation_path = match package.source_derivation {
+                Some(p) => p,
+                None => continue,
+            };
+
+            let source_package = self.nodes.get(&source_derivation_path).unwrap();
+
+            if let Some(name) = source_package.main_derivation.get_name() {
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.name = Some(name);
+                continue;
+            }
+        }
+        Ok(())
+    }
+
     pub fn get_root_node(&self) -> Option<String> {
         if self.root_nodes.len() == 1 {
             self.root_nodes.last().cloned()
@@ -1475,11 +1491,13 @@ pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> Pack
             id: derivation_path.clone(),
             package,
             url: None,
+            version: None,
+            name: None,
             group_id: None,
             source_derivation: None,
             main_derivation: derivation.clone(),
-            children: BTreeSet::default(),
             sources: vec![],
+            children: BTreeSet::default(),
             patches: BTreeSet::default(),
             build_inputs: BTreeSet::default(),
         };
@@ -1551,6 +1569,8 @@ pub fn get_package_graph_next(derivations: &Derivations, _packages: &Packages) -
             id: derivation_path.clone(),
             package: None,
             url: None,
+            version: None,
+            name: None,
             group_id: None,
             main_derivation: derivation.clone(),
             source_derivation: None,
