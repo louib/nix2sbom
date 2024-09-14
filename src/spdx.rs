@@ -65,35 +65,7 @@ fn dump_package(
     };
 
     let mut package_builder = SpdxItemPackagesBuilder::default();
-    let package_builder = package_builder
-        .name(package_name)
-        .spdxid(package_node.id.clone())
-        // .package_file_name("package_file_name")
-        // .supplier("supplier")
-        // .originator("originator")
-        .files_analyzed(true)
-        // .package_verification_code("verification_code")
-        // .checksums("checksum")
-        .homepage("home_page")
-        .source_info("source_info")
-        .license_concluded("license_concluded")
-        .license_info_from_files(vec![])
-        .license_declared("license_declared")
-        .license_comments("license_comments")
-        // .license_set("license_set")
-        // .license_info_from_files("license_info_in_files")
-        .license_declared("license_declared")
-        .license_concluded("license_concluded")
-        .license_info_from_files(vec![])
-        .license_declared("license_declared")
-        .license_comments("license_comments")
-        // .license_set("license_set")
-        // .license_info_from_files("license_info_in_files")
-        .license_declared("license_declared")
-        .license_concluded("license_concluded")
-        .license_info_from_files(vec![])
-        .license_declared("license_declared")
-        .license_comments("license_comments");
+    let package_builder = package_builder.name(package_name).spdxid(package_node.id.clone());
 
     if let Some(package_version) = package_node.version.clone() {
         package_builder.version_info(package_version);
