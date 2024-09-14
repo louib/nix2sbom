@@ -27,7 +27,7 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
     let package_graph: nix2sbom::nix::PackageGraph = serde_json::from_str(&contents).unwrap();
 
     let packages = nix2sbom::nix::Packages::default();
-    let expected_package_graph = nix2sbom::nix::get_package_graph_next(&derivations, &packages);
+    let expected_package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
 
     assert_eq!(expected_package_graph, package_graph);
 }
