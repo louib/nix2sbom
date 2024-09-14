@@ -96,42 +96,8 @@ fn dump_package_node(
     }
 
     let component = dump_derivation(package_graph, package_derivation_path, package_node);
-    let mut sub_components: Vec<Component> = vec![];
-    let main_source_path = package_node.main_derivation.get_source_out_path();
-    for child in &package_node.sources {
-        // FIXME not sure about that one
-        let child_derivation_path = child.get_source_out_path();
-        if main_source_path == child_derivation_path {
-            continue;
-        }
-        if let Some(component) = dump_sub_derivation(&child) {
-            sub_components.push(component);
-        }
-    }
+    // TODO handle sub-components https://github.com/louib/nix2sbom/issues/14
     component
-}
-
-fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Component> {
-    let derivation_name = match derivation.get_name() {
-        Some(n) => n,
-        None => {
-            // TODO we should probably log something here, but I'm not sure what other value
-            // from the derivation would make sense.
-            return None;
-        }
-    };
-    log::debug!("Dumping sub-derivation for {}", &derivation_name);
-
-    let mut component_builder = ComponentBuilder::default();
-    if let Some(source_path) = derivation.get_source_out_path() {
-        component_builder.bom_ref(source_path.to_string());
-    }
-    component_builder.name(derivation_name.to_string());
-    component_builder.scope("required".to_string());
-    if let Ok(component) = component_builder.build() {
-        return Some(component);
-    }
-    None
 }
 
 fn dump_derivation(

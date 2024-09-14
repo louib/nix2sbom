@@ -790,8 +790,6 @@ pub struct PackageNode {
 
     pub package: Option<Package>,
 
-    pub sources: Vec<Derivation>,
-
     pub patches: BTreeSet<String>,
 
     pub build_inputs: BTreeSet<String>,
@@ -1018,14 +1016,6 @@ impl PackageNode {
             }
             for line in self.main_derivation.pretty_print(depth, display_options) {
                 lines.push(line);
-            }
-            if self.sources.len() != 0 {
-                lines.push(PrettyPrintLine::new("sources:", depth + 1));
-                for source in &self.sources {
-                    for line in source.pretty_print(depth + 1, display_options) {
-                        lines.push(line);
-                    }
-                }
             }
             if self.patches.len() != 0 {
                 lines.push(PrettyPrintLine::new("patches:", depth + 1));
@@ -1517,7 +1507,6 @@ pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> Pack
             group_id: None,
             source_derivation: None,
             main_derivation: derivation.clone(),
-            sources: vec![],
             children: BTreeSet::default(),
             patches: BTreeSet::default(),
             build_inputs: BTreeSet::default(),
@@ -1567,8 +1556,6 @@ pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> Pack
                     && current_node_patches.contains(child_derivation.env.get("out").unwrap())
                 {
                     current_node.patches.insert(child_derivation_path.clone());
-                } else {
-                    current_node.sources.push(child_derivation.clone());
                 }
             }
 
@@ -1596,7 +1583,6 @@ pub fn get_package_graph_next(derivations: &Derivations, _packages: &Packages) -
             main_derivation: derivation.clone(),
             source_derivation: None,
             children: BTreeSet::default(),
-            sources: vec![],
             patches: BTreeSet::default(),
             build_inputs: BTreeSet::default(),
         };
