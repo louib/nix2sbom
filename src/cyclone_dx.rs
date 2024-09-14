@@ -29,14 +29,14 @@ pub fn dump(
         .unwrap()]);
 
     let mut components: Vec<Component> = vec![];
-    for (derivation_path, package) in package_graph.nodes.iter() {
+    for (derivation_path, package) in package_graph.nodes_next.iter() {
         if let Some(component) = dump_package_node(derivation_path, package, package_graph) {
             components.push(component);
         }
     }
 
     let mut dependencies: Vec<Dependency> = vec![];
-    for (derivation_path, package) in package_graph.nodes.iter() {
+    for (derivation_path, package) in package_graph.nodes_next.iter() {
         if package.children.len() == 0 {
             continue;
         }

@@ -133,6 +133,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         packages_without_a_url_or_group
     );
 
+    package_graph.populate_nodes()?;
+    log::info!("Package graph has {} nodes", package_graph.nodes_next.len());
+
     log::debug!("Creating the SBOM");
 
     let mut dump_options = nix2sbom::nix::DumpOptions::default();

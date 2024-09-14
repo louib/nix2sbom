@@ -271,9 +271,6 @@ impl Derivation {
     }
 
     pub fn get_name(&self) -> Option<String> {
-        if let Some(pname) = self.env.get("pname") {
-            return Some(pname.to_string());
-        }
         if let Some(name) = self.env.get("name") {
             if let Some(version) = self.get_version_from_env() {
                 if name.contains(&version) {
@@ -293,6 +290,10 @@ impl Derivation {
             if let Some(project_name) = crate::utils::get_project_name_from_archive_url(&url) {
                 return Some(project_name.to_string());
             }
+        }
+
+        if let Some(pname) = self.env.get("pname") {
+            return Some(pname.to_string());
         }
 
         None
@@ -1098,6 +1099,9 @@ pub struct PackageGraphStats {
 #[derive(PartialEq)]
 pub struct PackageGraph {
     pub nodes: BTreeMap<String, PackageNode>,
+
+    pub nodes_next: BTreeMap<String, PackageNode>,
+
     pub root_nodes: BTreeSet<String>,
     pub group_membership: BTreeMap<String, String>,
 }
@@ -1283,6 +1287,23 @@ impl PackageGraph {
                 package_node.name = Some(name);
                 continue;
             }
+        }
+        Ok(())
+    }
+
+    pub fn populate_nodes(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            let group_id = match package.group_id.clone() {
+                Some(g) => g,
+                None => continue,
+            };
+
+            if group_id != package.id {
+                continue;
+            }
+
+            self.nodes_next.insert(package.id.clone(), package.clone());
         }
         Ok(())
     }

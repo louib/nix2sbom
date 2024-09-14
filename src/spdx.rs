@@ -39,7 +39,7 @@ pub fn dump(
         .name(name.clone());
 
     let mut packages = vec![];
-    for (_package_id, package) in &package_graph.nodes {
+    for (_package_id, package) in &package_graph.nodes_next {
         let spdx_package = dump_package(package, &crate::nix::DumpOptions::default())?;
         packages.push(spdx_package);
     }
