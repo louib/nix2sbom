@@ -765,6 +765,8 @@ pub struct PackageNode {
 
     pub main_derivation: Derivation,
 
+    pub source_derivation: Option<String>,
+
     pub package: Option<Package>,
 
     pub sources: Vec<Derivation>,
@@ -1116,17 +1118,6 @@ pub struct PackageGraph {
     pub group_membership: BTreeMap<String, String>,
 }
 
-#[derive(Debug)]
-#[derive(Default)]
-#[derive(Serialize)]
-#[derive(Deserialize)]
-#[derive(PartialEq)]
-pub struct PackageGroup {
-    pub id: String,
-    pub url: String,
-    pub nodes: BTreeSet<String>,
-}
-
 impl PackageGraph {
     pub fn get_derivation_from_out_name(
         &self,
@@ -1158,24 +1149,25 @@ impl PackageGraph {
         ));
     }
 
-    pub fn get_package_groups(&mut self) -> BTreeMap<String, PackageGroup> {
-        let mut response = BTreeMap::default();
-
-        // For the derivations that have a source derivation, we mark them as group leader.
-        for (derivation_path, derivation) in self.nodes.iter() {
+    pub fn identify_source_derivations(&mut self) -> Result<(), anyhow::Error> {
+        let derivation_paths = self.nodes.keys().cloned().collect::<Vec<String>>();
+        for derivation_path in derivation_paths {
+            let derivation = match self.nodes.get(&derivation_path) {
+                Some(d) => d,
+                None => {
+                    return Err(anyhow::format_err!(
+                        "Could not get derivation for {} in package graph",
+                        &derivation_path
+                    ))
+                }
+            };
             let source_derivation_out_path = match derivation.main_derivation.get_source_path() {
                 Some(p) => p,
-                None => {
-                    if self.group_membership.get(derivation_path).is_none() {
-                        self.group_membership
-                            .insert(derivation_path.clone(), derivation_path.clone());
-                    }
-                    continue;
-                }
+                None => continue,
             };
 
             let source_derivation_path = match self
-                .get_derivation_from_out_name(&derivation.main_derivation, source_derivation_out_path)
+                .get_derivation_from_out_name(&derivation.main_derivation.clone(), source_derivation_out_path)
             {
                 Ok(d) => d,
                 Err(_e) => {
@@ -1186,7 +1178,8 @@ impl PackageGraph {
 
                     continue;
                 }
-            };
+            }
+            .clone();
 
             log::debug!(
                 "found source_derivation {} for out path {}",
@@ -1194,102 +1187,10 @@ impl PackageGraph {
                 source_derivation_out_path
             );
 
-            if self.group_membership.get(derivation_path).is_none() {
-                self.group_membership
-                    .insert(derivation_path.clone(), derivation_path.clone());
-            }
-
-            if self.group_membership.get(&source_derivation_path).is_none() {
-                self.group_membership
-                    .insert(source_derivation_path.clone(), derivation_path.clone());
-            }
+            let derivation = self.nodes.get_mut(&derivation_path).unwrap();
+            derivation.source_derivation = Some(source_derivation_path.to_string());
         }
-
-        // Handle the groups that have a source derivation
-        for (node_id, group_id) in &self.group_membership {
-            if node_id != group_id {
-                continue;
-            }
-
-            let mut group = PackageGroup {
-                id: group_id.clone(),
-                url: "".to_string(),
-                nodes: BTreeSet::default(),
-            };
-
-            group.nodes.insert(group_id.clone());
-
-            let derivation = self.nodes.get(node_id).unwrap();
-            if let Some(url) = derivation.main_derivation.get_url() {
-                group.url = url;
-            }
-
-            if let Some(source_derivation_out_path) = derivation.main_derivation.get_source_path() {
-                let source_derivation_path = match self
-                    .get_derivation_from_out_name(&derivation.main_derivation, source_derivation_out_path)
-                {
-                    Ok(d) => d,
-                    Err(_e) => {
-                        log::warn!(
-                            "Could not get source derivation in package graph for {}",
-                            &source_derivation_out_path
-                        );
-
-                        continue;
-                    }
-                };
-
-                let source_derivation = match self.nodes.get(&source_derivation_path) {
-                    Some(d) => d,
-                    None => {
-                        // FIXME this function should return an error.
-                        panic!(
-                            "Could not get derivation for {} in package graph",
-                            &source_derivation_path
-                        );
-                    }
-                }
-                .main_derivation
-                .clone();
-
-                group.nodes.insert(source_derivation_path.clone());
-
-                // We already have an url for this group.
-                if group.url.is_empty() {
-                    if let Some(url) = source_derivation.get_url() {
-                        group.url = url;
-                    }
-                }
-            }
-
-            response.insert(group_id.clone(), group);
-        }
-
-        // Handle the groups that have a single derivation
-        for (node_id, group_id) in &self.group_membership {
-            if response.contains_key(group_id) {
-                continue;
-            }
-
-            let mut group = PackageGroup {
-                id: group_id.clone(),
-                url: "".to_string(),
-                nodes: BTreeSet::default(),
-            };
-
-            let derivation = match self.nodes.get(node_id) {
-                Some(d) => d,
-                None => {
-                    continue;
-                }
-            };
-            if let Some(url) = derivation.main_derivation.get_url() {
-                group.url = url;
-            }
-
-            response.insert(group_id.clone(), group);
-        }
-        response
+        Ok(())
     }
 
     pub fn get_root_node(&self) -> Option<String> {
@@ -1495,6 +1396,7 @@ pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> Pack
         let mut current_node = PackageNode {
             id: derivation_path.clone(),
             package,
+            source_derivation: None,
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
             sources: vec![],
@@ -1569,6 +1471,7 @@ pub fn get_package_graph_next(derivations: &Derivations, _packages: &Packages) -
             id: derivation_path.clone(),
             package: None,
             main_derivation: derivation.clone(),
+            source_derivation: None,
             children: BTreeSet::default(),
             sources: vec![],
             patches: BTreeSet::default(),

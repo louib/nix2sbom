@@ -101,8 +101,17 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         package_graph.root_nodes.len()
     );
 
-    let package_groups = package_graph.get_package_groups();
-    log::info!("{} package groups", package_groups.len());
+    package_graph.identify_source_derivations()?;
+    let mut packages_with_a_source = 0;
+    for node in package_graph.nodes.values() {
+        if node.source_derivation.is_some() {
+            packages_with_a_source += 1;
+        }
+    }
+    log::info!(
+        "Found {} packages with a source derivation",
+        packages_with_a_source
+    );
 
     log::debug!("Creating the SBOM");
 
