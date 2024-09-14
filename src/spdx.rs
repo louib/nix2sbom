@@ -74,9 +74,12 @@ fn dump_package(
     if let Some(url) = &package_node.url {
         package_builder.download_location(url);
     } else {
-        // FIXME this is obviously not what we should be doing.
-        package_builder.download_location("https://example.com/archive-3.2.2.tar.gz");
+        panic!(
+            "No URL found for package {}. We will not include it in the manifest.",
+            package_node.id
+        );
     }
 
-    Ok(package_builder.build()?)
+    let package = package_builder.build()?;
+    Ok(package)
 }

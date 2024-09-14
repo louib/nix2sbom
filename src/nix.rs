@@ -318,6 +318,9 @@ impl Derivation {
             if input_derivation_path.ends_with(".tar.gz.drv") {
                 response.push(&input_derivation_path);
             }
+            if input_derivation_path.ends_with("-source.drv") {
+                response.push(&input_derivation_path);
+            }
         }
         response
     }
@@ -452,17 +455,6 @@ impl Derivation {
 pub struct Output {
     path: String,
 }
-
-// pub fn get_dependencies(path: &str) -> Vec<String> {
-//     // TODO nix-store -qR /an/executable/path
-//     vec![]
-// }
-
-// Get the derivation path associated with a store object
-// pub fn get_derivation_path(store_path: &str) -> String {
-//     // TODO nix-store -qd store_path
-//     "".to_string()
-// }
 
 pub fn get_packages(metadata_path: Option<String>, no_meta: bool) -> Result<Packages, String> {
     let mut packages: Packages = Packages::default();
@@ -1157,12 +1149,24 @@ impl PackageGraph {
                 source_derivation_out_path
             );
 
+            let source_derivation = self.nodes.get_mut(&source_derivation_path).unwrap();
+
+            // There are cases when the source derivation actually links to another source
+            // derivation, so the package group can span more than 2 levels. I'm not sure how
+            // to handle that, or if we need to group all the derivations together. For the moment,
+            // I just ignore the derivations except the last 2 levels.
+            if source_derivation.main_derivation.get_url().is_none() {
+                log::warn!(
+                    "Derivation {} has no URL, so it will not be considered a source derivation.",
+                    source_derivation_path
+                );
+                continue;
+            }
+
+            source_derivation.group_id = Some(package_id.to_string());
             let derivation = self.nodes.get_mut(&package_id).unwrap();
             derivation.source_derivation = Some(source_derivation_path.to_string());
             derivation.group_id = Some(package_id.to_string());
-
-            let source_derivation = self.nodes.get_mut(&source_derivation_path).unwrap();
-            source_derivation.group_id = Some(package_id.to_string());
         }
         Ok(())
     }
