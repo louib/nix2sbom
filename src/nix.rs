@@ -271,6 +271,10 @@ impl Derivation {
     }
 
     pub fn get_name(&self) -> Option<String> {
+        if let Some(pname) = self.env.get("pname") {
+            return Some(pname.to_string());
+        }
+
         if let Some(name) = self.env.get("name") {
             if let Some(version) = self.get_version_from_env() {
                 if name.contains(&version) {
@@ -290,10 +294,6 @@ impl Derivation {
             if let Some(project_name) = crate::utils::get_project_name_from_archive_url(&url) {
                 return Some(project_name.to_string());
             }
-        }
-
-        if let Some(pname) = self.env.get("pname") {
-            return Some(pname.to_string());
         }
 
         None
