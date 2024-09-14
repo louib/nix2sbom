@@ -1477,10 +1477,7 @@ impl PrettyPrintLine {
     }
 }
 
-pub fn get_package_graph(
-    derivations: &crate::nix::Derivations,
-    packages: &crate::nix::Packages,
-) -> PackageGraph {
+pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> PackageGraph {
     let mut response = PackageGraph::default();
 
     for (derivation_path, derivation) in derivations.iter() {
@@ -1563,10 +1560,7 @@ pub fn get_package_graph(
     response
 }
 
-pub fn get_package_graph_next(
-    derivations: &crate::nix::Derivations,
-    _packages: &crate::nix::Packages,
-) -> PackageGraph {
+pub fn get_package_graph_next(derivations: &Derivations, _packages: &Packages) -> PackageGraph {
     let mut response = PackageGraph::default();
 
     let mut all_child_derivations: HashSet<String> = HashSet::default();
