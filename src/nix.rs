@@ -304,8 +304,21 @@ impl Derivation {
     }
 
     // Returns the store path of the source
-    pub fn get_source_path(&self) -> Option<&String> {
+    pub fn get_source_out_path(&self) -> Option<&String> {
         self.env.get("src")
+    }
+
+    // For some reason, some derivations do not declare their source inputs using the
+    // standard src field. This is the case for cargo dependencies for example.
+    // We can nonetheless detect those using the name of the input derivations.
+    pub fn get_undeclared_source_paths(&self) -> Vec<&String> {
+        let mut response: Vec<&String> = vec![];
+        for input_derivation_path in self.input_derivations.keys() {
+            if input_derivation_path.ends_with(".tar.gz.drv") {
+                response.push(&input_derivation_path);
+            }
+        }
+        response
     }
 
     // Returns the main url of the derivation
@@ -770,6 +783,8 @@ pub struct PackageNode {
 
     pub source_derivation: Option<String>,
 
+    pub group_id: Option<String>,
+
     pub package: Option<Package>,
 
     pub sources: Vec<Derivation>,
@@ -1152,25 +1167,17 @@ impl PackageGraph {
         ));
     }
 
-    pub fn identify_source_derivations(&mut self) -> Result<(), anyhow::Error> {
-        let derivation_paths = self.nodes.keys().cloned().collect::<Vec<String>>();
-        for derivation_path in derivation_paths {
-            let derivation = match self.nodes.get(&derivation_path) {
-                Some(d) => d,
-                None => {
-                    return Err(anyhow::format_err!(
-                        "Could not get derivation for {} in package graph",
-                        &derivation_path
-                    ))
-                }
-            };
-            let source_derivation_out_path = match derivation.main_derivation.get_source_path() {
+    pub fn populate_source_derivation(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            let package_id = package.id.clone();
+            let source_derivation_out_path = match package.main_derivation.get_source_out_path() {
                 Some(p) => p,
                 None => continue,
             };
 
             let source_derivation_path = match self
-                .get_derivation_from_out_name(&derivation.main_derivation.clone(), source_derivation_out_path)
+                .get_derivation_from_out_name(&package.main_derivation.clone(), source_derivation_out_path)
             {
                 Ok(d) => d,
                 Err(_e) => {
@@ -1190,8 +1197,51 @@ impl PackageGraph {
                 source_derivation_out_path
             );
 
-            let derivation = self.nodes.get_mut(&derivation_path).unwrap();
+            let derivation = self.nodes.get_mut(&package_id).unwrap();
             derivation.source_derivation = Some(source_derivation_path.to_string());
+            derivation.group_id = Some(package_id.to_string());
+
+            let source_derivation = self.nodes.get_mut(&source_derivation_path).unwrap();
+            source_derivation.group_id = Some(package_id.to_string());
+        }
+        Ok(())
+    }
+
+    pub fn populate_source_derivation_from_undeclared_sources(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            let package_id = package.id.clone();
+            if package.url.is_some() {
+                continue;
+            }
+            if package.group_id.is_some() {
+                continue;
+            }
+
+            let undeclared_source_derivation_paths = package.main_derivation.get_undeclared_source_paths();
+
+            if undeclared_source_derivation_paths.len() == 0 {
+                continue;
+            }
+
+            if undeclared_source_derivation_paths.len() > 1 {
+                log::warn!("Found multiple undeclared source derivations for {}", &package.id);
+                continue;
+            }
+
+            let source_derivation_path = undeclared_source_derivation_paths[0];
+            log::debug!(
+                "found undeclared source derivation {} for package {}",
+                source_derivation_path,
+                package.id
+            );
+
+            let package = self.nodes.get_mut(&package.id).unwrap();
+            package.source_derivation = Some(source_derivation_path.to_string());
+            package.group_id = Some(package.id.to_string());
+
+            let source_derivation = self.nodes.get_mut(source_derivation_path).unwrap();
+            source_derivation.group_id = Some(package_id.to_string());
         }
         Ok(())
     }
@@ -1425,6 +1475,7 @@ pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> Pack
             id: derivation_path.clone(),
             package,
             url: None,
+            group_id: None,
             source_derivation: None,
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
@@ -1500,6 +1551,7 @@ pub fn get_package_graph_next(derivations: &Derivations, _packages: &Packages) -
             id: derivation_path.clone(),
             package: None,
             url: None,
+            group_id: None,
             main_derivation: derivation.clone(),
             source_derivation: None,
             children: BTreeSet::default(),

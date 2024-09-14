@@ -101,7 +101,8 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         package_graph.root_nodes.len()
     );
 
-    package_graph.identify_source_derivations()?;
+    package_graph.populate_source_derivation()?;
+    package_graph.populate_source_derivation_from_undeclared_sources()?;
     let mut packages_with_a_source = 0;
     for node in package_graph.nodes.values() {
         if node.source_derivation.is_some() {
@@ -114,13 +115,21 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     );
 
     package_graph.populate_url()?;
-    let mut packages_with_a_url = 0;
+    let mut packages_without_a_url_or_group = 0;
     for node in package_graph.nodes.values() {
-        if node.url.is_some() {
-            packages_with_a_url += 1;
+        if node.group_id.is_some() {
+            continue;
         }
+        if node.url.is_some() {
+            continue;
+        }
+        packages_without_a_url_or_group += 1;
+        log::warn!("{} does not have a url or a group!!", node.id);
     }
-    log::info!("Found {} packages with a URL", packages_with_a_url);
+    log::info!(
+        "Found {} packages without a URL or a group",
+        packages_without_a_url_or_group
+    );
 
     log::debug!("Creating the SBOM");
 

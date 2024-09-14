@@ -97,10 +97,10 @@ fn dump_package_node(
 
     let component = dump_derivation(package_graph, package_derivation_path, package_node);
     let mut sub_components: Vec<Component> = vec![];
-    let main_source_path = package_node.main_derivation.get_source_path();
+    let main_source_path = package_node.main_derivation.get_source_out_path();
     for child in &package_node.sources {
         // FIXME not sure about that one
-        let child_derivation_path = child.get_source_path();
+        let child_derivation_path = child.get_source_out_path();
         if main_source_path == child_derivation_path {
             continue;
         }
@@ -123,7 +123,7 @@ fn dump_sub_derivation(derivation: &crate::nix::Derivation) -> Option<Component>
     log::debug!("Dumping sub-derivation for {}", &derivation_name);
 
     let mut component_builder = ComponentBuilder::default();
-    if let Some(source_path) = derivation.get_source_path() {
+    if let Some(source_path) = derivation.get_source_out_path() {
         component_builder.bom_ref(source_path.to_string());
     }
     component_builder.name(derivation_name.to_string());
