@@ -754,6 +754,7 @@ pub struct LicenseDetails {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 #[derive(PartialEq)]
 #[derive(Serialize)]
 #[derive(Deserialize)]
@@ -762,6 +763,8 @@ pub struct PackageNode {
     // The id for the package node. In our case, it is the nix store path
     // of the main derivation for this package.
     pub id: String,
+
+    pub url: Option<String>,
 
     pub main_derivation: Derivation,
 
@@ -1193,6 +1196,31 @@ impl PackageGraph {
         Ok(())
     }
 
+    pub fn populate_url(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            if let Some(url) = package.main_derivation.get_url() {
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.url = Some(url);
+                continue;
+            }
+
+            let source_derivation_path = match package.source_derivation {
+                Some(p) => p,
+                None => continue,
+            };
+
+            let source_package = self.nodes.get(&source_derivation_path).unwrap();
+
+            if let Some(url) = source_package.main_derivation.get_url() {
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.url = Some(url);
+                continue;
+            }
+        }
+        Ok(())
+    }
+
     pub fn get_root_node(&self) -> Option<String> {
         if self.root_nodes.len() == 1 {
             self.root_nodes.last().cloned()
@@ -1396,6 +1424,7 @@ pub fn get_package_graph(derivations: &Derivations, packages: &Packages) -> Pack
         let mut current_node = PackageNode {
             id: derivation_path.clone(),
             package,
+            url: None,
             source_derivation: None,
             main_derivation: derivation.clone(),
             children: BTreeSet::default(),
@@ -1470,6 +1499,7 @@ pub fn get_package_graph_next(derivations: &Derivations, _packages: &Packages) -
         let mut current_node = PackageNode {
             id: derivation_path.clone(),
             package: None,
+            url: None,
             main_derivation: derivation.clone(),
             source_derivation: None,
             children: BTreeSet::default(),

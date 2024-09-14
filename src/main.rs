@@ -113,6 +113,15 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
         packages_with_a_source
     );
 
+    package_graph.populate_url()?;
+    let mut packages_with_a_url = 0;
+    for node in package_graph.nodes.values() {
+        if node.url.is_some() {
+            packages_with_a_url += 1;
+        }
+    }
+    log::info!("Found {} packages with a URL", packages_with_a_url);
+
     log::debug!("Creating the SBOM");
 
     let mut dump_options = nix2sbom::nix::DumpOptions::default();

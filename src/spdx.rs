@@ -100,7 +100,7 @@ fn dump_package(
         package_builder.version_info(package_version);
     }
 
-    if let Some(url) = package_node.main_derivation.get_url() {
+    if let Some(url) = &package_node.url {
         package_builder.download_location(url);
     } else {
         // FIXME this is obviously not what we should be doing.
