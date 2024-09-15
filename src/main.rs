@@ -93,47 +93,12 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     log::debug!("Found {} packages in the Nix store", packages.len());
 
     log::info!("Building the package graph");
-    let mut package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    let package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
     log::info!("{} nodes in the package graph", package_graph.nodes.len());
     log::debug!(
         "{} root nodes in the package graph",
         package_graph.root_nodes.len()
     );
-
-    package_graph.populate_source_derivation()?;
-    package_graph.populate_source_derivation_from_undeclared_sources()?;
-    let mut packages_with_a_source = 0;
-    for node in package_graph.nodes.values() {
-        if node.source_derivation.is_some() {
-            packages_with_a_source += 1;
-        }
-    }
-    log::info!(
-        "Found {} packages with a source derivation",
-        packages_with_a_source
-    );
-
-    package_graph.populate_url()?;
-    package_graph.populate_version()?;
-    package_graph.populate_name()?;
-    let mut packages_without_a_url_or_group = 0;
-    for node in package_graph.nodes.values() {
-        if node.group_id.is_some() {
-            continue;
-        }
-        if node.url.is_some() {
-            continue;
-        }
-        packages_without_a_url_or_group += 1;
-        log::warn!("{} does not have a url or a group!!", node.id);
-    }
-    log::info!(
-        "Found {} packages without a URL or a group",
-        packages_without_a_url_or_group
-    );
-
-    package_graph.populate_nodes()?;
-    log::info!("Package graph has {} nodes", package_graph.nodes_next.len());
 
     log::debug!("Creating the SBOM");
 

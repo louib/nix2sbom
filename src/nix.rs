@@ -1119,6 +1119,44 @@ impl PackageGraph {
         ));
     }
 
+    pub fn transform(&mut self) -> Result<(), anyhow::Error> {
+        self.populate_source_derivation()?;
+        self.populate_source_derivation_from_undeclared_sources()?;
+        let mut packages_with_a_source = 0;
+        for node in self.nodes.values() {
+            if node.source_derivation.is_some() {
+                packages_with_a_source += 1;
+            }
+        }
+        log::info!(
+            "Found {} packages with a source derivation",
+            packages_with_a_source
+        );
+
+        self.populate_url()?;
+        self.populate_version()?;
+        self.populate_name()?;
+        let mut packages_without_a_url_or_group = 0;
+        for node in self.nodes.values() {
+            if node.group_id.is_some() {
+                continue;
+            }
+            if node.url.is_some() {
+                continue;
+            }
+            packages_without_a_url_or_group += 1;
+            log::warn!("{} does not have a url or a group!!", node.id);
+        }
+        log::info!(
+            "Found {} packages without a URL or a group",
+            packages_without_a_url_or_group
+        );
+
+        self.populate_nodes()?;
+        log::info!("Package graph has {} nodes", self.nodes_next.len());
+        Ok(())
+    }
+
     pub fn populate_source_derivation(&mut self) -> Result<(), anyhow::Error> {
         let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
         for package in packages {

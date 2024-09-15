@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use rstest::*;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -12,7 +14,7 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
     }
 
     let derivations_file_path = format!("{}/derivations.json", path.display());
-    let package_graph_file_path = format!("{}/package-graph.yaml", path.display());
+    let package_nodes_file_path = format!("{}/package-nodes.json", path.display());
 
     let file = File::open(derivations_file_path).unwrap();
     let mut buf_reader = BufReader::new(file);
@@ -20,14 +22,15 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
     buf_reader.read_to_string(&mut contents).unwrap();
     let derivations: nix2sbom::nix::Derivations = serde_json::from_str(&contents).unwrap();
 
-    let file = File::open(package_graph_file_path).unwrap();
+    let file = File::open(package_nodes_file_path).unwrap();
     let mut buf_reader = BufReader::new(file);
     let mut contents = String::new();
     buf_reader.read_to_string(&mut contents).unwrap();
-    let package_graph: nix2sbom::nix::PackageGraph = serde_json::from_str(&contents).unwrap();
+    let package_graph: BTreeMap<String, nix2sbom::nix::PackageNode> = serde_json::from_str(&contents).unwrap();
 
     let packages = nix2sbom::nix::Packages::default();
-    let expected_package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    let mut expected_package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    expected_package_graph.transform().unwrap();
 
-    assert_eq!(expected_package_graph, package_graph);
+    assert_eq!(expected_package_graph.nodes_next, package_graph);
 }
