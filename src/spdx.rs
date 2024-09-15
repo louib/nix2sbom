@@ -32,17 +32,16 @@ pub fn dump(
         // This would make the namespace content-addressed, and thus allow other SPDX documents
         // to reference this one.
         // .document_namespace()
+        .document_namespace(format!("https://spdx.org/spdxdocs{}-{}", name, uuid))
         .relationships(vec![])
         .data_license("temp")
-        .document_namespace(format!("https://spdx.org/spdxdocs/{}-{}", name, uuid))
-        // .files(files)
         .spdx_version("SPDX-2.3")
         .spdxid("SPDXRef-DOCUMENT")
         .name(name.clone());
 
     let mut packages = vec![];
     for (_package_id, package) in &package_graph.nodes_next {
-        let spdx_package = dump_package(package, &crate::nix::DumpOptions::default())?;
+        let spdx_package = dump_package(package, &options)?;
         packages.push(spdx_package);
     }
 
