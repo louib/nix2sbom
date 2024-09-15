@@ -1119,7 +1119,7 @@ impl PackageGraph {
         ));
     }
 
-    pub fn transform(&mut self, _packages: &Packages) -> Result<(), anyhow::Error> {
+    pub fn transform(&mut self, packages: &Packages) -> Result<(), anyhow::Error> {
         self.populate_source_derivation()?;
         self.populate_source_derivation_from_undeclared_sources()?;
         let mut packages_with_a_source = 0;
@@ -1154,6 +1154,48 @@ impl PackageGraph {
 
         self.populate_nodes()?;
         log::info!("Package graph has {} nodes", self.nodes_next.len());
+
+        self.populate_packages(packages)?;
+        let mut packages_without_a_package_meta = 0;
+        for node in self.nodes.values() {
+            if node.group_id.is_some() {
+                continue;
+            }
+            if node.url.is_some() {
+                continue;
+            }
+            packages_without_a_package_meta += 1;
+        }
+        log::info!(
+            "Found {} packages without a package meta",
+            packages_without_a_package_meta
+        );
+
+        Ok(())
+    }
+
+    pub fn populate_packages(&mut self, packages: &Packages) -> Result<(), anyhow::Error> {
+        let package_nodes = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package_node in package_nodes {
+            if let Some(p) = packages.get(&package_node.id) {
+                let package = p.clone();
+                let package_node = self.nodes.get_mut(&package_node.id).unwrap();
+                package_node.package = Some(package);
+                continue;
+            }
+
+            let source_derivation_path = match package_node.source_derivation {
+                Some(p) => p,
+                None => continue,
+            };
+
+            if let Some(p) = packages.get(&source_derivation_path) {
+                let package = p.clone();
+                let package_node = self.nodes.get_mut(&package_node.id).unwrap();
+                package_node.package = Some(package);
+                continue;
+            }
+        }
         Ok(())
     }
 
