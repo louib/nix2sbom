@@ -1,3 +1,4 @@
+use chrono::Utc;
 use serde_spdx::spdx::v_2_3::{
     SpdxBuilder, SpdxCreationInfoBuilder, SpdxItemPackages, SpdxItemPackagesBuilder,
 };
@@ -8,7 +9,8 @@ pub fn dump(
     options: &crate::nix::DumpOptions,
 ) -> Result<String, anyhow::Error> {
     let creation_info = SpdxCreationInfoBuilder::default()
-        .created("created")
+        // .created(&Utc::now().to_rfc3339())
+        .created(&Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string())
         .creators(vec![])
         .build()?;
     let root_node_id = match package_graph.get_root_node() {
