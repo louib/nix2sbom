@@ -45,3 +45,21 @@ jobs:
           IFS=$'\n'; for file in $files; do
             rustfmt --check "$file"
           done
+
+  scan-for-vulnerabilities:
+    name: Scan for Vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@da36cb69b1c3247ad7a1f931ebfd954a1105ef14 # v14
+      - run: |
+          nix profile install .#
+          nix2sbom -f spdx .# > spdx.json
+
+      - name: Scan SBOM
+        uses: anchore/scan-action@v4
+        with:
+          sbom: "spdx.json"
+          output-format: json
+          severity-cutoff: medium
+          add-cpes-if-none: true
