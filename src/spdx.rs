@@ -66,7 +66,12 @@ fn dump_package(
     };
 
     let mut package_builder = SpdxItemPackagesBuilder::default();
-    let package_builder = package_builder.name(package_name).spdxid(package_node.id.clone());
+
+    // The SPDX package identifier can only container letters, numbers,
+    // and the characters `.` and `-`. This should probably be encapsulated
+    // into a builder from the spdx crate.
+    let spdx_id = format!("SPDXRef-{}", package_node.id.replace("/nix/store/", ""));
+    let package_builder = package_builder.name(package_name).spdxid(spdx_id);
 
     if let Some(package_version) = package_node.version.clone() {
         package_builder.version_info(package_version);
