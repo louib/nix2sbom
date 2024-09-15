@@ -1119,7 +1119,7 @@ impl PackageGraph {
         ));
     }
 
-    pub fn transform(&mut self) -> Result<(), anyhow::Error> {
+    pub fn transform(&mut self, _packages: &Packages) -> Result<(), anyhow::Error> {
         self.populate_source_derivation()?;
         self.populate_source_derivation_from_undeclared_sources()?;
         let mut packages_with_a_source = 0;
@@ -1525,7 +1525,7 @@ impl PrettyPrintLine {
     }
 }
 
-pub fn get_package_graph(derivations: &Derivations, _packages: &Packages) -> PackageGraph {
+pub fn get_package_graph(derivations: &Derivations) -> PackageGraph {
     let mut response = PackageGraph::default();
 
     let mut all_child_derivations: HashSet<String> = HashSet::default();

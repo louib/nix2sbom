@@ -29,8 +29,8 @@ fn for_each_file(#[files("tests/fixtures/*")] path: PathBuf) {
     let package_graph: BTreeMap<String, nix2sbom::nix::PackageNode> = serde_json::from_str(&contents).unwrap();
 
     let packages = nix2sbom::nix::Packages::default();
-    let mut expected_package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
-    expected_package_graph.transform().unwrap();
+    let mut expected_package_graph = nix2sbom::nix::get_package_graph(&derivations);
+    expected_package_graph.transform(&packages).unwrap();
 
     assert_eq!(expected_package_graph.nodes_next, package_graph);
 }

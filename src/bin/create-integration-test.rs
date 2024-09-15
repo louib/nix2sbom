@@ -24,9 +24,9 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     let derivations = nix2sbom::nix::Derivation::get_derivations(&args.file_path)?;
 
     let packages = nix2sbom::nix::Packages::default();
-    let mut package_graph = nix2sbom::nix::get_package_graph(&derivations, &packages);
+    let mut package_graph = nix2sbom::nix::get_package_graph(&derivations);
 
-    package_graph.transform()?;
+    package_graph.transform(&packages)?;
 
     // Saving the fixtures so we can replay the test later.
     let target_dir = format!("./tests/fixtures/{}", args.name);
