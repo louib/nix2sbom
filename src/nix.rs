@@ -1145,7 +1145,6 @@ impl PackageGraph {
                 continue;
             }
             packages_without_a_url_or_group += 1;
-            log::warn!("{} does not have a url or a group!!", node.id);
         }
         log::info!(
             "Found {} packages without a URL or a group",
