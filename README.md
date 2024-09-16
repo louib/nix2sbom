@@ -35,7 +35,7 @@ Here is an example of how to generate an SPDX manifest for your nix flake in a G
       - name: Install nix2sbom
         uses: EricCrosson/install-github-release-binary@681cc3de7c5c5ac935b1a2a19e4e0c577c4d3027 # v2.3.4
         with:
-          targets: louib/nix2sbom/nix2sbom@v2.1.2
+          targets: louib/nix2sbom/nix2sbom@v2.4.5
 
       - name: Generate the SPDX manifest
         run: |
