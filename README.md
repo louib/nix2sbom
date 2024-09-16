@@ -39,7 +39,7 @@ Here is an example of how to generate an SPDX manifest for your nix flake in a G
 
       - name: Generate the SPDX manifest
         run: |
-          nix2sbom .# -f spdx > sbom.spdx
+          nix2sbom .# -f spdx > sbom.spdx.json
 ```
 
 ## Installing
