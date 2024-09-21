@@ -11,7 +11,7 @@ pub fn dump(
     let creation_info = SpdxCreationInfoBuilder::default()
         // .created(&Utc::now().to_rfc3339())
         .created(&Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string())
-        .creators(vec![])
+        .creators(vec!["Tool: nix2sbom".to_string()])
         .build()?;
     let root_node_id = match package_graph.get_root_node() {
         Some(n) => n,
@@ -34,7 +34,7 @@ pub fn dump(
         // .document_namespace()
         .document_namespace(format!("https://spdx.org/spdxdocs{}-{}", name, uuid))
         .relationships(vec![])
-        .data_license("temp")
+        // .data_license("temp")
         .spdx_version("SPDX-2.3")
         .spdxid("SPDXRef-DOCUMENT")
         .name(name.clone());
