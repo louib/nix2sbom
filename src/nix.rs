@@ -1212,7 +1212,7 @@ impl PackageGraph {
             {
                 Ok(d) => d,
                 Err(_e) => {
-                    log::warn!(
+                    log::debug!(
                         "Could not get source derivation in package graph for {}",
                         &source_derivation_out_path
                     );
@@ -1278,6 +1278,20 @@ impl PackageGraph {
                 source_derivation_path,
                 package.id
             );
+
+            let source_derivation = self.nodes.get_mut(source_derivation_path).unwrap();
+
+            // There are cases when the source derivation actually links to another source
+            // derivation, so the package group can span more than 2 levels. I'm not sure how
+            // to handle that, or if we need to group all the derivations together. For the moment,
+            // I just ignore the derivations except the last 2 levels.
+            if source_derivation.main_derivation.get_url().is_none() {
+                log::warn!(
+                    "Derivation {} has no URL, so it will not be considered a source derivation.",
+                    source_derivation_path
+                );
+                continue;
+            }
 
             let package = self.nodes.get_mut(&package.id).unwrap();
             package.source_derivation = Some(source_derivation_path.to_string());
