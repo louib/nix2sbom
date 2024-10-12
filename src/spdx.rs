@@ -78,7 +78,7 @@ fn dump_package(
     let spdx_id = format!("SPDXRef-{}", package_node.id.replace("/nix/store/", ""));
     let package_builder = package_builder.name(package_name).spdxid(spdx_id);
 
-    if let Some(package_version) = package_node.version.clone() {
+    if let Some(package_version) = package_node.get_version() {
         package_builder.version_info(package_version);
     }
 

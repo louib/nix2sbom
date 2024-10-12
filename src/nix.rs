@@ -1045,6 +1045,15 @@ impl PackageNode {
         }
         lines
     }
+    pub fn get_version(&self) -> Option<String> {
+        if let Some(v) = &self.version {
+            return Some(v.clone());
+        }
+        match self.package.as_ref() {
+            Some(p) => Some(p.version.to_string()),
+            None => None,
+        }
+    }
 }
 
 #[derive(Debug)]
