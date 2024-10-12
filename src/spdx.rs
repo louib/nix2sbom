@@ -3,6 +3,11 @@ use serde_spdx::spdx::v_2_3::{
     SpdxBuilder, SpdxCreationInfoBuilder, SpdxItemPackages, SpdxItemPackagesBuilder,
 };
 
+// This is the only license accepted in the data_license field. See
+// https://spdx.org/rdf/spdx-terms-v2.1/objectproperties/dataLicense___1140128580.html
+// for details.
+pub const CREATIVE_COMMONS_LICENSE: &str = "http://spdx.org/licenses/CC0-1.0";
+
 pub fn dump(
     package_graph: &crate::nix::PackageGraph,
     _format: &crate::sbom::SerializationFormat,
@@ -17,13 +22,13 @@ pub fn dump(
         Some(n) => n,
         None => return Ok("Expected to find a single root node when dumping to sdpx format".to_string()),
     };
-    let root_derivation = package_graph.nodes.get(&root_node_id).unwrap();
+    let root_package = package_graph.nodes.get(&root_node_id).unwrap();
 
     let mut spdx_builder = SpdxBuilder::default();
 
     // Generate a new uuid for this manifest
     let uuid = uuid::Uuid::new_v4();
-    let name = root_derivation.id.clone();
+    let name = root_package.id.clone();
 
     let spdx_builder = spdx_builder
         .creation_info(creation_info)
@@ -34,7 +39,7 @@ pub fn dump(
         // .document_namespace()
         .document_namespace(format!("https://spdx.org/spdxdocs{}-{}", name, uuid))
         .relationships(vec![])
-        // .data_license("temp")
+        .data_license(CREATIVE_COMMONS_LICENSE)
         .spdx_version("SPDX-2.3")
         .spdxid("SPDXRef-DOCUMENT")
         .name(name.clone());
