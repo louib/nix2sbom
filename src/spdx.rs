@@ -91,6 +91,15 @@ fn dump_package(
         );
     }
 
+    let homepages = match &package_node.package {
+        Some(p) => p.meta.get_homepages(),
+        None => vec![],
+    };
+    if let Some(homepage) = homepages.first() {
+        package_builder.homepage(homepage.clone());
+    }
+    // TODO add the available git URLs somewhere.
+
     let package = package_builder.build()?;
     Ok(package)
 }

@@ -1054,6 +1054,22 @@ impl PackageNode {
             None => None,
         }
     }
+
+    pub fn get_git_urls(&self) -> Vec<String> {
+        let mut response: Vec<String> = vec![];
+
+        for url in &self.main_derivation.get_urls() {
+            let git_url = match crate::utils::get_git_url_from_generic_url(&url) {
+                Some(u) => u,
+                None => continue,
+            };
+            if Some(git_url.to_string()) == self.url {
+                continue;
+            }
+            response.push(git_url);
+        }
+        response
+    }
 }
 
 #[derive(Debug)]

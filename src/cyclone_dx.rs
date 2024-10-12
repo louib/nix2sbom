@@ -231,14 +231,11 @@ fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<Extern
     //         external_references.push(external_reference_builder.build().unwrap());
     //     }
     // }
-    for url in &package_node.main_derivation.get_urls() {
-        if let Some(git_url) = crate::utils::get_git_url_from_generic_url(&url) {
-            log::debug!("Found git url {} for source URL {}", &git_url, &url);
-            let mut external_reference_builder = ExternalReferenceBuilder::default();
-            external_reference_builder.type_("vcs");
-            external_reference_builder.url(git_url);
-            external_references.push(external_reference_builder.build().unwrap());
-        }
+    for git_url in &package_node.get_git_urls() {
+        let mut external_reference_builder = ExternalReferenceBuilder::default();
+        external_reference_builder.type_("vcs");
+        external_reference_builder.url(git_url);
+        external_references.push(external_reference_builder.build().unwrap());
     }
     external_references
 }
