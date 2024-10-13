@@ -965,22 +965,6 @@ impl PackageNode {
         return serde_json::to_string_pretty(self).map_err(|e| e.to_string());
     }
 
-    pub fn print_out_paths(&self, package_graph: &PackageGraph, depth: usize) -> String {
-        if is_stdenv(&self.main_derivation.get_name().unwrap_or("".to_string())) {
-            return "".to_string();
-        }
-
-        let mut response = "".to_string();
-        for child_derivation_path in self.children.iter() {
-            let child_derivation = package_graph.nodes.get(child_derivation_path).unwrap();
-
-            let out_path = "  ".repeat(depth) + &child_derivation_path + "\n";
-            response += &out_path;
-            response += &child_derivation.print_out_paths(package_graph, depth + 1);
-        }
-        response
-    }
-
     pub fn pretty_print(
         &self,
         graph: &PackageGraph,
@@ -1514,17 +1498,6 @@ impl PackageGraph {
             visited_children.insert(current_node_path.clone());
         }
 
-        response
-    }
-
-    pub fn print_out_paths(&self) -> String {
-        let mut response: String = "".to_string();
-        for derivation_path in &self.root_nodes {
-            let out_path = "  ".repeat(0) + &derivation_path + "\n";
-            response += &out_path;
-            let child_derivation = self.nodes.get(derivation_path).unwrap();
-            response += &child_derivation.print_out_paths(self, 1);
-        }
         response
     }
 

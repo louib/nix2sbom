@@ -11,7 +11,6 @@ pub enum Format {
     SPDX,
     CycloneDX,
     PrettyPrint,
-    OutPaths,
     Stats,
 }
 
@@ -26,9 +25,6 @@ impl Format {
         if format.ends_with("pretty") {
             return Some(Format::PrettyPrint);
         }
-        if format.ends_with("out-paths") {
-            return Some(Format::OutPaths);
-        }
         if format.ends_with("stats") {
             return Some(Format::Stats);
         }
@@ -40,7 +36,6 @@ impl Format {
             Format::CycloneDX => CYCLONE_DX_NAME.to_string(),
             Format::SPDX => SPDX_NAME.to_string(),
             Format::PrettyPrint => PRETTY_PRINT_NAME.to_string(),
-            Format::OutPaths => OUT_PATHS_NAME.to_string(),
             Format::Stats => STATS_NAME.to_string(),
         }
     }
@@ -52,7 +47,6 @@ impl Format {
             Format::Stats => SerializationFormat::JSON,
             // We don't really care which value is returned in those cases.
             Format::PrettyPrint => SerializationFormat::XML,
-            Format::OutPaths => SerializationFormat::XML,
         }
     }
 
@@ -84,9 +78,6 @@ impl Format {
                 };
 
                 return Ok(package_graph.pretty_print(0, &display_options));
-            }
-            Format::OutPaths => {
-                return Ok(package_graph.print_out_paths());
             }
             Format::Stats => {
                 return Ok(serde_json::to_string_pretty(&package_graph.get_stats(options))?);
