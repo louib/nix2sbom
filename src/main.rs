@@ -56,18 +56,18 @@ fn main() -> Result<std::process::ExitCode, Box<dyn std::error::Error>> {
     let args = NixToSBOM::parse();
 
     let output_format = match args.format {
-        Some(f) => match nix2sbom::sbom::Format::from_string(&f) {
+        Some(f) => match nix2sbom::format::Format::from_string(&f) {
             Some(f) => f,
             None => {
                 eprintln!("Invalid format {}", &f);
                 return Ok(std::process::ExitCode::FAILURE);
             }
         },
-        None => nix2sbom::sbom::Format::default(),
+        None => nix2sbom::format::Format::default(),
     };
 
     let serialization_format = match args.serialization_format {
-        Some(f) => match nix2sbom::sbom::SerializationFormat::from_string(&f) {
+        Some(f) => match nix2sbom::format::SerializationFormat::from_string(&f) {
             Some(f) => f,
             None => {
                 eprintln!("Invalid serialization format {}", &f);

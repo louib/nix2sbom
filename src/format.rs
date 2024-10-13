@@ -1,3 +1,6 @@
+pub mod cyclone_dx;
+pub mod spdx;
+
 pub const CYCLONE_DX_NAME: &str = "CycloneDX";
 pub const SPDX_NAME: &str = "SPDX";
 pub const PRETTY_PRINT_NAME: &str = "pretty-print";
@@ -34,22 +37,22 @@ impl Format {
 
     pub fn to_pretty_name(&self) -> String {
         match self {
-            crate::sbom::Format::CycloneDX => CYCLONE_DX_NAME.to_string(),
-            crate::sbom::Format::SPDX => SPDX_NAME.to_string(),
-            crate::sbom::Format::PrettyPrint => PRETTY_PRINT_NAME.to_string(),
-            crate::sbom::Format::OutPaths => OUT_PATHS_NAME.to_string(),
-            crate::sbom::Format::Stats => STATS_NAME.to_string(),
+            Format::CycloneDX => CYCLONE_DX_NAME.to_string(),
+            Format::SPDX => SPDX_NAME.to_string(),
+            Format::PrettyPrint => PRETTY_PRINT_NAME.to_string(),
+            Format::OutPaths => OUT_PATHS_NAME.to_string(),
+            Format::Stats => STATS_NAME.to_string(),
         }
     }
 
     pub fn get_default_serialization_format(&self) -> SerializationFormat {
         match self {
-            crate::sbom::Format::CycloneDX => crate::sbom::SerializationFormat::JSON,
-            crate::sbom::Format::SPDX => crate::sbom::SerializationFormat::JSON,
-            crate::sbom::Format::Stats => crate::sbom::SerializationFormat::JSON,
+            Format::CycloneDX => SerializationFormat::JSON,
+            Format::SPDX => SerializationFormat::JSON,
+            Format::Stats => SerializationFormat::JSON,
             // We don't really care which value is returned in those cases.
-            crate::sbom::Format::PrettyPrint => crate::sbom::SerializationFormat::XML,
-            crate::sbom::Format::OutPaths => crate::sbom::SerializationFormat::XML,
+            Format::PrettyPrint => SerializationFormat::XML,
+            Format::OutPaths => SerializationFormat::XML,
         }
     }
 
@@ -60,19 +63,19 @@ impl Format {
         options: &crate::nix::DumpOptions,
     ) -> Result<String, anyhow::Error> {
         match self {
-            crate::sbom::Format::CycloneDX => {
-                return match crate::cyclone_dx::dump(&package_graph, &serialization_format, options) {
+            Format::CycloneDX => {
+                return match cyclone_dx::dump(&package_graph, &serialization_format, options) {
                     Ok(d) => Ok(d),
                     Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
                 };
             }
-            crate::sbom::Format::SPDX => {
-                return match crate::spdx::dump(&package_graph, &serialization_format, options) {
+            Format::SPDX => {
+                return match spdx::dump(&package_graph, &serialization_format, options) {
                     Ok(d) => Ok(d),
                     Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
                 };
             }
-            crate::sbom::Format::PrettyPrint => {
+            Format::PrettyPrint => {
                 let display_options = crate::nix::DisplayOptions {
                     print_stdenv: false,
                     print_only_purl: true,
@@ -82,10 +85,10 @@ impl Format {
 
                 return Ok(package_graph.pretty_print(0, &display_options));
             }
-            crate::sbom::Format::OutPaths => {
+            Format::OutPaths => {
                 return Ok(package_graph.print_out_paths());
             }
-            crate::sbom::Format::Stats => {
+            Format::Stats => {
                 return Ok(serde_json::to_string_pretty(&package_graph.get_stats(options))?);
             }
         }
@@ -122,9 +125,9 @@ impl SerializationFormat {
     }
     pub fn to_string(&self) -> String {
         match self {
-            crate::sbom::SerializationFormat::JSON => "json".to_string(),
-            crate::sbom::SerializationFormat::YAML => "yaml".to_string(),
-            crate::sbom::SerializationFormat::XML => "xml".to_string(),
+            SerializationFormat::JSON => "json".to_string(),
+            SerializationFormat::YAML => "yaml".to_string(),
+            SerializationFormat::XML => "xml".to_string(),
         }
     }
 }

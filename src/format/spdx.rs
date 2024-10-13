@@ -10,7 +10,7 @@ pub const CREATIVE_COMMONS_LICENSE: &str = "http://spdx.org/licenses/CC0-1.0";
 
 pub fn dump(
     package_graph: &crate::nix::PackageGraph,
-    _format: &crate::sbom::SerializationFormat,
+    _format: &crate::format::SerializationFormat,
     options: &crate::nix::DumpOptions,
 ) -> Result<String, anyhow::Error> {
     let creation_info = SpdxCreationInfoBuilder::default()

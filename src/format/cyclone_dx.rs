@@ -13,7 +13,7 @@ const CURRENT_SPEC_VERSION: &str = "1.4";
 
 pub fn dump(
     package_graph: &crate::nix::PackageGraph,
-    format: &crate::sbom::SerializationFormat,
+    format: &crate::format::SerializationFormat,
     options: &crate::nix::DumpOptions,
 ) -> Result<String, anyhow::Error> {
     let mut metadata = Metadata::default();
@@ -56,7 +56,7 @@ pub fn dump(
     }
 
     let cyclonedx = CycloneDxBuilder::default()
-        .bom_format(crate::sbom::CYCLONE_DX_NAME)
+        .bom_format(crate::format::CYCLONE_DX_NAME)
         .spec_version(CURRENT_SPEC_VERSION)
         .version(1)
         .metadata(metadata)
@@ -66,7 +66,7 @@ pub fn dump(
         .unwrap();
 
     match format {
-        crate::sbom::SerializationFormat::JSON => {
+        crate::format::SerializationFormat::JSON => {
             let json_dump = match options.pretty {
                 Some(false) => serde_json::to_string(&cyclonedx),
                 _ => serde_json::to_string_pretty(&cyclonedx),
@@ -76,10 +76,10 @@ pub fn dump(
                 Err(e) => Err(anyhow::format_err!(e.to_string())),
             };
         }
-        crate::sbom::SerializationFormat::YAML => {
+        crate::format::SerializationFormat::YAML => {
             serde_yaml::to_string(&cyclonedx).map_err(|e| anyhow::format_err!(e.to_string()))
         }
-        crate::sbom::SerializationFormat::XML => Err(anyhow::format_err!(
+        crate::format::SerializationFormat::XML => Err(anyhow::format_err!(
             "XML is not supported for CycloneDX".to_string()
         )),
     }
