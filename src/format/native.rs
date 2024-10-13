@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -7,11 +9,11 @@ use serde::{Deserialize, Serialize};
 #[derive(PartialEq)]
 struct NativePackage {
     pub id: String,
-    pub name: Option<String>,
+    pub name: String,
     pub version: Option<String>,
     pub purl: String,
 
-    pub git_urls: Vec<String>,
+    pub git_urls: BTreeSet<String>,
     pub download_urls: Vec<String>,
 
     pub homepages: Vec<String>,
@@ -32,13 +34,16 @@ pub fn dump(
             Some(derivation) => derivation,
             None => continue,
         };
+        let package_name = match package.name.clone() {
+            Some(n) => n,
+            None => return Err(anyhow::anyhow!("No name found for package {}", package.id)),
+        };
         let native_package = NativePackage {
             id: package.id.clone(),
-            // name: package.get_name(),
-            name: Some("".to_string()),
+            name: package_name,
             version: package.get_version(),
             purl: package.get_purl().to_string(),
-            git_urls: package.get_git_urls(),
+            git_urls: package.git_urls.clone(),
             download_urls: package.main_derivation.get_urls(),
             homepages: vec![],
             source_derivation: source_derivation.to_string(),

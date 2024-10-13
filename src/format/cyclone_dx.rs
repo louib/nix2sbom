@@ -231,7 +231,7 @@ fn get_external_references(package_node: &crate::nix::PackageNode) -> Vec<Extern
     //         external_references.push(external_reference_builder.build().unwrap());
     //     }
     // }
-    for git_url in &package_node.get_git_urls() {
+    for git_url in &package_node.git_urls {
         let mut external_reference_builder = ExternalReferenceBuilder::default();
         external_reference_builder.type_("vcs");
         external_reference_builder.url(git_url);

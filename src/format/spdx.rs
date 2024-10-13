@@ -67,7 +67,7 @@ fn dump_package(
 ) -> Result<SpdxItemPackages, anyhow::Error> {
     let package_name = match package_node.name.clone() {
         Some(n) => n,
-        None => package_node.id.clone(),
+        None => return Err(anyhow::anyhow!("No name found for package {}", package_node.id)),
     };
 
     let mut package_builder = SpdxItemPackagesBuilder::default();

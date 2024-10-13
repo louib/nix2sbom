@@ -774,6 +774,8 @@ pub struct PackageNode {
     pub version: Option<String>,
     pub name: Option<String>,
 
+    pub git_urls: BTreeSet<String>,
+
     pub main_derivation: Derivation,
 
     pub source_derivation: Option<String>,
@@ -1029,6 +1031,7 @@ impl PackageNode {
         }
         lines
     }
+
     pub fn get_version(&self) -> Option<String> {
         if let Some(v) = &self.version {
             return Some(v.clone());
@@ -1037,22 +1040,6 @@ impl PackageNode {
             Some(p) => Some(p.version.to_string()),
             None => None,
         }
-    }
-
-    pub fn get_git_urls(&self) -> Vec<String> {
-        let mut response: Vec<String> = vec![];
-
-        for url in &self.main_derivation.get_urls() {
-            let git_url = match crate::utils::get_git_url_from_generic_url(&url) {
-                Some(u) => u,
-                None => continue,
-            };
-            if Some(git_url.to_string()) == self.url {
-                continue;
-            }
-            response.push(git_url);
-        }
-        response
     }
 }
 
@@ -1145,6 +1132,7 @@ impl PackageGraph {
         self.populate_url()?;
         self.populate_version()?;
         self.populate_name()?;
+        self.populate_git_urls()?;
         let mut packages_without_a_url_or_group = 0;
         for node in self.nodes.values() {
             if node.group_id.is_some() {
@@ -1357,6 +1345,37 @@ impl PackageGraph {
                 let package_node = self.nodes.get_mut(&package.id).unwrap();
                 package_node.version = Some(version);
                 continue;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn populate_git_urls(&mut self) -> Result<(), anyhow::Error> {
+        let packages = self.nodes.values().cloned().collect::<Vec<PackageNode>>();
+        for package in packages {
+            for url in &package.main_derivation.get_urls() {
+                let git_url = match crate::utils::get_git_url_from_generic_url(&url) {
+                    Some(u) => u,
+                    None => continue,
+                };
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.git_urls.insert(git_url);
+            }
+
+            let source_derivation_path = match package.source_derivation {
+                Some(p) => p,
+                None => continue,
+            };
+
+            let source_package = self.nodes.get(&source_derivation_path).unwrap();
+
+            for url in source_package.main_derivation.get_urls() {
+                let git_url = match crate::utils::get_git_url_from_generic_url(&url) {
+                    Some(u) => u,
+                    None => continue,
+                };
+                let package_node = self.nodes.get_mut(&package.id).unwrap();
+                package_node.git_urls.insert(git_url);
             }
         }
         Ok(())
@@ -1587,6 +1606,7 @@ pub fn get_package_graph(derivations: &Derivations) -> PackageGraph {
             id: derivation_path.clone(),
             package: None,
             url: None,
+            git_urls: BTreeSet::default(),
             version: None,
             name: None,
             group_id: None,
