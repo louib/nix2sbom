@@ -1,17 +1,19 @@
 pub mod cyclone_dx;
+pub mod native;
 pub mod spdx;
 
 pub const CYCLONE_DX_NAME: &str = "CycloneDX";
 pub const SPDX_NAME: &str = "SPDX";
 pub const PRETTY_PRINT_NAME: &str = "pretty-print";
-pub const OUT_PATHS_NAME: &str = "pretty-print";
 pub const STATS_NAME: &str = "stats";
+pub const NATIVE_NAME: &str = "Native nix2sbom format";
 
 pub enum Format {
     SPDX,
     CycloneDX,
     PrettyPrint,
     Stats,
+    Native,
 }
 
 impl Format {
@@ -28,6 +30,9 @@ impl Format {
         if format.ends_with("stats") {
             return Some(Format::Stats);
         }
+        if format.ends_with("native") {
+            return Some(Format::Native);
+        }
         None
     }
 
@@ -37,6 +42,7 @@ impl Format {
             Format::SPDX => SPDX_NAME.to_string(),
             Format::PrettyPrint => PRETTY_PRINT_NAME.to_string(),
             Format::Stats => STATS_NAME.to_string(),
+            Format::Native => NATIVE_NAME.to_string(),
         }
     }
 
@@ -47,6 +53,7 @@ impl Format {
             Format::Stats => SerializationFormat::JSON,
             // We don't really care which value is returned in those cases.
             Format::PrettyPrint => SerializationFormat::XML,
+            Format::Native => SerializationFormat::YAML,
         }
     }
 
@@ -65,6 +72,12 @@ impl Format {
             }
             Format::SPDX => {
                 return match spdx::dump(&package_graph, &serialization_format, options) {
+                    Ok(d) => Ok(d),
+                    Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
+                };
+            }
+            Format::Native => {
+                return match native::dump(&package_graph, &serialization_format, options) {
                     Ok(d) => Ok(d),
                     Err(s) => Err(anyhow::format_err!("Error dumping manifest: {}", s.to_string())),
                 };
