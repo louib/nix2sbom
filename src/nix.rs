@@ -2,11 +2,17 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::process::Command;
 
+use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 
 // This is a special file used By NixOS to represent the derivations
 // that were used to build the current system.
 const CURRENT_SYSTEM_PATH: &str = "/run/current-system";
+
+fn is_semantic_version(possible_version: &str) -> bool {
+    let semver_regex = Regex::new(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$").unwrap();
+    semver_regex.is_match(possible_version)
+}
 
 #[derive(Debug)]
 #[derive(Deserialize)]
@@ -282,6 +288,12 @@ impl Derivation {
                     return Some(name.replace(&package_version_suffix, ""));
                 }
             }
+            if let Some(possible_version) = name.split("-").last() {
+                if is_semantic_version(possible_version) {
+                    let package_version_suffix = "-".to_string() + &possible_version;
+                    return Some(name.replace(&package_version_suffix, ""));
+                }
+            }
             if name != "source" {
                 return Some(name.to_string());
             }
@@ -419,11 +431,16 @@ impl Derivation {
                 return Some(version);
             }
         }
-        let pname = match self.env.get("pname") {
+        let name = match self.env.get("name") {
             Some(n) => n,
             None => return None,
         };
-        let name = match self.env.get("name") {
+        if let Some(possible_version) = name.split("-").last() {
+            if is_semantic_version(possible_version) {
+                return Some(possible_version.to_string());
+            }
+        }
+        let pname = match self.env.get("pname") {
             Some(n) => n,
             None => return None,
         };
@@ -2194,6 +2211,85 @@ mod tests {
         let derivation: Derivation = serde_json::from_str(derivation).unwrap();
         assert_eq!(derivation.get_name(), Some("zstd".to_string()));
         assert_eq!(derivation.get_version(), Some("1.5.5".to_string()));
+    }
+
+    #[test]
+    pub fn test_split_version_and_name() {
+        let derivation: &str = r###"
+          {
+            "args": [
+              "-e",
+              "/nix/store/v6x3cs394jgqfbi0a42pam708flxaphh-default-builder.sh"
+            ],
+            "builder": "/nix/store/izpf49b74i15pcr9708s3xdwyqs4jxwl-bash-5.2p32/bin/bash",
+            "env": {
+              "__structuredAttrs": "",
+              "buildCommand": "",
+              "buildInputs": "",
+              "builder": "/nix/store/izpf49b74i15pcr9708s3xdwyqs4jxwl-bash-5.2p32/bin/bash",
+              "cmakeFlags": "",
+              "configureFlags": "",
+              "depsBuildBuild": "",
+              "depsBuildBuildPropagated": "",
+              "depsBuildTarget": "",
+              "depsBuildTargetPropagated": "",
+              "depsHostHost": "",
+              "depsHostHostPropagated": "",
+              "depsTargetTarget": "",
+              "depsTargetTargetPropagated": "",
+              "doCheck": "",
+              "doInstallCheck": "",
+              "enableParallelBuilding": "1",
+              "enableParallelChecking": "1",
+              "enableParallelInstalling": "1",
+              "mesonFlags": "",
+              "name": "anstyle-query-1.1.1",
+              "nativeBuildInputs": "",
+              "out": "/nix/store/vbry7m4bvv035bvwm1jspdv9ccj1h20m-anstyle-query-1.1.1",
+              "outputs": "out",
+              "passAsFile": "buildCommand",
+              "patches": "",
+              "propagatedBuildInputs": "",
+              "propagatedNativeBuildInputs": "",
+              "stdenv": "/nix/store/9ip31vbkgg0lp4rx042svlllv3945nxq-stdenv-linux",
+              "strictDeps": "",
+              "system": "x86_64-linux"
+            },
+            "inputDrvs": {
+              "/nix/store/j2fnz39ss5iha58y76hrls6kf9nksxyj-crate-anstyle-query-1.1.1.tar.gz.drv": {
+                "dynamicOutputs": {},
+                "outputs": [
+                  "out"
+                ]
+              },
+              "/nix/store/s7hvxiy7934f539xy4df5mm6bsigvns0-bash-5.2p32.drv": {
+                "dynamicOutputs": {},
+                "outputs": [
+                  "out"
+                ]
+              },
+              "/nix/store/w7ab6iz9by4fn92y8j2qj0nknfxq9snl-stdenv-linux.drv": {
+                "dynamicOutputs": {},
+                "outputs": [
+                  "out"
+                ]
+              }
+            },
+            "inputSrcs": [
+              "/nix/store/v6x3cs394jgqfbi0a42pam708flxaphh-default-builder.sh"
+            ],
+            "name": "anstyle-query-1.1.1",
+            "outputs": {
+              "out": {
+                "path": "/nix/store/vbry7m4bvv035bvwm1jspdv9ccj1h20m-anstyle-query-1.1.1"
+              }
+            },
+            "system": "x86_64-linux"
+          }
+        "###;
+        let derivation: Derivation = serde_json::from_str(derivation).unwrap();
+        assert_eq!(derivation.get_name(), Some("anstyle-query".to_string()));
+        assert_eq!(derivation.get_version(), Some("1.1.1".to_string()));
     }
 
     #[test]

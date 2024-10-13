@@ -38,7 +38,7 @@ pub fn dump(
             Some(n) => n,
             None => return Err(anyhow::anyhow!("No name found for package {}", package.id)),
         };
-        let native_package = NativePackage {
+        let mut native_package = NativePackage {
             id: package.id.clone(),
             name: package_name,
             version: package.get_version(),
@@ -48,6 +48,10 @@ pub fn dump(
             homepages: vec![],
             source_derivation: source_derivation.to_string(),
         };
+        if let Some(url) = &package.url {
+            native_package.download_urls.push(url.to_string());
+        }
+
         native_packages.push(native_package);
     }
 
