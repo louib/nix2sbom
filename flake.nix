@@ -41,6 +41,7 @@ rec {
 
           cargoPackages = with pkgs; [
             cargo
+            cargo-outdated
             rustc
             rustfmt
             rust-analyzer
